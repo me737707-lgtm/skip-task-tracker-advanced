@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skip Task Tracker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #1a1a2e;
+  color: #fff;
+  padding: 20px;
+}
+.container {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+h1 { text-align: center; margin-bottom: 5px; font-size: 2rem; font-weight: 700; color: #ffffff; }
+.prayer-text { text-align: center; margin-bottom: 30px; font-size: 1rem; color: #cbd5e0; font-weight: 600; direction: rtl; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.full-width { grid-column: 1 / -1; }
+.form-group { position: relative; }
+label { display: block; margin-bottom: 8px; font-size: 1rem; color: #e0e0e0; font-weight: 600; }
+input, select, textarea {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+textarea { min-height: 80px; resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: #4dabf7; background: rgba(255, 255, 255, 0.12); }
+small { color: #aaa; font-size: 0.8rem; display: block; margin-top: 5px; }
+select option { background: #1a1a2e; color: #fff; }
+.hidden-group { display: none; opacity: 0; max-height: 0; overflow: hidden; transition: all 0.3s ease; }
+.hidden-group.visible { display: block; opacity: 1; max-height: 500px; }
+.frames-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+button {
+  width: 100%;
+  padding: 14px;
+  background: #4dabf7;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+button:hover { background: #74c0fc; }
+button:disabled { background: #3a7ca8; cursor: not-allowed; opacity: 0.7; }
+#status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 1.1rem; min-height: 24px; }
+.success { color: #69db7c; }
+.error { color: #ff6b6b; }
+label span { color: #ff6b6b; }
+
+/* Screenshot Section */
+.screenshot-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(77, 171, 247, 0.4);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin-top: 10px;
+  transition: all 0.3s;
+}
+.screenshot-section:hover { border-color: rgba(77, 171, 247, 0.8); background: rgba(255, 255, 255, 0.08); }
+.screenshot-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.screenshot-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 20px;
+  background: rgba(77, 171, 247, 0.2);
+  border: 1px solid #4dabf7;
+  border-radius: 8px;
+  color: #4dabf7;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: auto;
+  margin: 0;
+}
+.screenshot-btn:hover { background: rgba(77, 171, 247, 0.4); color: #fff; }
+.screenshot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.preview-container {
+  position: relative;
+  display: none;
+  margin-top: 15px;
+}
+.preview-container.visible { display: block; }
+.preview-container img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+.remove-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ff6b6b;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  width: 32px;
+}
+.remove-btn:hover { background: #ff4757; }
+#screenshotFileInput { display: none; }
+
+@media (max-width: 700px) {
+  .form-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 1.5rem; }
+  .frames-container { grid-template-columns: 1fr; }
+  .screenshot-buttons { flex-direction: column; }
+  .screenshot-btn { width: 100%; }
+}
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: none; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 30px; border-radius: 20px;
+  max-width: 500px; width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: popIn 0.3s ease-out;
+}
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-content h2 { color: #69db7c; margin-bottom: 20px; }
+.message-box {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px; border-radius: 10px; margin-bottom: 20px;
+  font-size: 1.1rem; word-wrap: break-word;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #e0e0e0; font-weight: 600; text-align: center;
+}
+.modal-buttons { display: flex; gap: 10px; justify-content: center; }
+.modal-btn { padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; font-size: 1rem; width: auto; }
+.btn-copy { background: #69db7c; color: #000; }
+.btn-close { background: #ff6b6b; color: #fff; }
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="container">
+  <h1>Skip Task Tracker</h1>
+  <p class="prayer-text">❤️ ادعوا لأخونا علي ويكا بالرحمة والمغفرة ❤️</p>
+  <form id="taskForm" autocomplete="off">
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <label for="timestamp">Timestamp</label>
+        <input type="text" id="timestamp" name="timestamp" readonly>
+      </div>
+      <div class="form-group">
+        <label for="labelerName">Labeler Name <span>*</span></label>
+        <input type="text" id="labelerName" name="labelerName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+      </div>
+      <div class="form-group">
+        <label for="userInput">User <span>*</span></label>
+        <input type="text" id="userInput" name="userInput" placeholder="e.g. me123456 or 123456" required maxlength="8" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+        <small>Allowed: 123456 OR me123456 (6 digits required)</small>
+      </div>
+      <div class="form-group">
+        <label for="qcName">Reviewed by (QC Name) <span>*</span></label>
+        <input type="text" id="qcName" name="qcName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+      </div>
+      <div class="form-group">
+        <label for="taskLink">Task Link <span>*</span></label>
+        <input type="url" id="taskLink" name="taskLink" placeholder="Paste labeling link here" required>
+        <small>Must be a valid labeling.robot.car link</small>
+      </div>
+      <div class="form-group">
+        <label for="taskId">Task ID <span>*</span></label>
+        <input type="text" id="taskId" name="taskId" placeholder="Auto-filled ID" required>
+      </div>
+      <div class="form-group">
+        <label for="taskType">Task Type <span>*</span></label>
+        <select id="taskType" name="taskType" required>
+          <option value="" disabled selected>Select Type...</option>
+          <option value="LIDAR">LIDAR</option>
+          <option value="Lane Line">Lane Line</option>
+          <option value="Image">Image</option>
+          <option value="Image segmentation">Image segmentation</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="queueName">Queue Name <span>*</span></label>
+        <select id="queueName" name="queueName" required>
+          <option value="" disabled selected>Select Queue...</option>
+          <option value="alpine_sc3_full_scene_lane_3d_v4">alpine_sc3_full_scene_lane_3d_v4</option>
+          <option value="mpg_sc3_full_scene_mapless_3d_lanes">mpg_sc3_full_scene_mapless_3d_lanes</option>
+          <option value="r2s_sc3_3d_labeling">r2s_sc3_3d_labeling</option>
+          <option value="v4_sc3_full_scene_3d_lanes_parallel_labeling">v4_sc3_full_scene_3d_lanes_parallel_labeling</option>
+          <option value="sc3_full_scene_lanes_3d_v4">sc3_full_scene_lanes_3d_v4</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="modality">Modality <span>*</span></label>
+        <select id="modality" name="modality" required>
+          <option value="" disabled selected>Select Modality...</option>
+          <option value="LIDAR FP">LIDAR FP</option>
+          <option value="LIDAR QA">LIDAR QA</option>
+          <option value="Image FP">Image FP</option>
+          <option value="Image QA">Image QA</option>
+          <option value="MSL Map Labeling">MSL Map Labeling</option>
+          <option value="MSL Map Labeling QA">MSL Map Labeling QA</option>
+          <option value="Relabeling FP">Relabeling FP</option>
+          <option value="Relabeling QA">Relabeling QA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="passStatus">Pass <span>*</span></label>
+        <select id="passStatus" name="passStatus" required>
+          <option value="" disabled selected>Select Status...</option>
+          <option value="FP">FP</option>
+          <option value="QA">QA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="shift">Shift <span>*</span></label>
+        <select id="shift" name="shift" required>
+          <option value="" disabled selected>Select Shift...</option>
+          <option value="Morning">Morning</option>
+          <option value="Night">Night</option>
+          <option value="Overnight">Overnight</option>
+        </select>
+      </div>
+      <div class="form-group full-width">
+        <label for="issue">Issue <span>*</span></label>
+        <select id="issue" name="issue" required>
+          <option value="" disabled selected>Select an issue...</option>
+          <option value="edge case">edge case</option>
+          <option value="Not a freeway">Not a freeway</option>
+          <option value="Camera projection issue">Camera projection issue</option>
+          <option value="Degraded lidar returns">Degraded lidar returns</option>
+          <option value="Lidar Shift Horizontally">Lidar Shift Horizontally</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group full-width hidden-group" id="edgeCaseGroup">
+        <label for="edgeCaseSubIssue">Edge Case Type <span>*</span></label>
+        <select id="edgeCaseSubIssue" name="edgeCaseSubIssue">
+          <option value="" disabled selected>Select edge case type...</option>
+          <option value="waiting for response">waiting for response</option>
+          <option value="edge case">edge case</option>
+          <option value="missed information">missed information</option>
+          <option value="Tool issue">Tool issue</option>
+          <option value="Map issue">Map issue</option>
+          <option value="Other">Other (specify below)</option>
+        </select>
+        <label for="edgeCaseDesc" style="margin-top: 15px;">Edge Case Description <span id="edgeCaseDescRequired" style="display:none;">*</span></label>
+        <textarea id="edgeCaseDesc" name="edgeCaseDesc" placeholder="Please describe the edge case details here..."></textarea>
+      </div>
+      <div class="form-group full-width hidden-group" id="otherSubGroup">
+        <label for="otherSubIssue">Select Other Type <span>*</span></label>
+        <select id="otherSubIssue" name="otherSubIssue">
+          <option value="" disabled selected>Select specific type...</option>
+          <option value="Lidar points shifting vertically">Lidar Points Shift Vertically</option>
+          <option value="Other Reason">Other Reason</option>
+        </select>
+      </div>
+      <div class="form-group full-width hidden-group" id="otherReasonGroup">
+        <label for="otherReasonDesc">Reason Description <span>*</span></label>
+        <textarea id="otherReasonDesc" name="otherReasonDesc" placeholder="Please describe the reason here..."></textarea>
+      </div>
+      <div class="form-group full-width hidden-group" id="issuedFramesGroup">
+        <label>Issued Frames <span>*</span></label>
+        <div class="frames-container">
+          <div class="form-group">
+            <label style="font-size:0.9rem; color:#4dabf7;">From Frame</label>
+            <input type="text" inputmode="numeric" id="frameStart" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
+          </div>
+          <div class="form-group">
+            <label style="font-size:0.9rem; color:#4dabf7;">To Frame</label>
+            <input type="text" inputmode="numeric" id="frameEnd" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ Screenshot Section -->
+      <div class="form-group full-width">
+        <label>📸 Screenshot (Optional)</label>
+        <div class="screenshot-section">
+          <div class="screenshot-buttons">
+            <button type="button" class="screenshot-btn" id="uploadFileBtn" onclick="document.getElementById('screenshotFileInput').click()">
+              📁 Upload Image
+            </button>
+            <button type="button" class="screenshot-btn" id="captureScreenBtn" onclick="captureScreen()">
+              🖥️ Capture Screen
+            </button>
+          </div>
+          <input type="file" id="screenshotFileInput" accept="image/*" onchange="handleFileSelect(this)">
+          <div class="preview-container" id="previewContainer">
+            <img id="previewImage" src="" alt="Screenshot Preview">
+            <button type="button" class="remove-btn" onclick="removeScreenshot()" title="Remove Screenshot">&times;</button>
+          </div>
+          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG. Max size: 5MB</small>
+        </div>
+      </div>
+
+      <div class="full-width">
+        <button type="submit" id="submitBtn">Submit Report</button>
+      </div>
+    </div>
+  </form>
+  <p id="status"></p>
+</div>
+
+<div id="customModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>Task Submitted ✅</h2>
+    <p style="margin-bottom: 10px; font-size: 0.9rem; color:#aaa;">Please copy the message below to GULP description box:</p>
+    <div id="modalMessage" class="message-box"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn btn-copy" onclick="copyModalMessage()">Copy Message</button>
+      <button class="modal-btn btn-close" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   ✅ رابط الـ API
+===================================================== */
+const INJECTED_URL = "<?= apiUrl ?>";
+const MANUAL_URL = "https://script.google.com/macros/s/AKfycbzc8Q0OmppTYIpjAbm4WtpUkfiLTzJpCsHsxw7058oUDlbVqVlY7NjJ7zV3qY6jWUVY/exec";
+const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
+
+const form = document.getElementById('taskForm');
+const issueSelect = document.getElementById('issue');
+const issuedFramesGroup = document.getElementById('issuedFramesGroup');
+const edgeCaseGroup = document.getElementById('edgeCaseGroup');
+const otherSubGroup = document.getElementById('otherSubGroup');
+const otherReasonGroup = document.getElementById('otherReasonGroup');
+const frameStartInput = document.getElementById('frameStart');
+const frameEndInput = document.getElementById('frameEnd');
+const edgeCaseDescInput = document.getElementById('edgeCaseDesc');
+const edgeCaseSubIssueSelect = document.getElementById('edgeCaseSubIssue');
+const edgeCaseDescRequired = document.getElementById('edgeCaseDescRequired');
+const otherSubIssueSelect = document.getElementById('otherSubIssue');
+const otherReasonDescInput = document.getElementById('otherReasonDesc');
+const timestampInput = document.getElementById('timestamp');
+const statusPara = document.getElementById('status');
+const taskLinkInput = document.getElementById('taskLink');
+const taskIdInput = document.getElementById('taskId');
+const userInput = document.getElementById('userInput');
+const labelerNameInput = document.getElementById('labelerName');
+const qcNameInput = document.getElementById('qcName');
+const shiftSelect = document.getElementById('shift');
+const submitBtn = document.getElementById('submitBtn');
+const customModal = document.getElementById('customModal');
+const modalMessage = document.getElementById('modalMessage');
+
+// ✅ Screenshot Variables
+const previewContainer = document.getElementById('previewContainer');
+const previewImage = document.getElementById('previewImage');
+let screenshotBase64 = "";
+let screenshotFileName = "";
+
+/* ---------- Timestamp ---------- */
+function setTimestamp() {
+  const now = new Date();
+  const options = {
+    timeZone: "Africa/Cairo",
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: true
+  };
+  timestampInput.value = now.toLocaleString('en-US', options).replace(',', '');
+}
+setTimestamp();
+setInterval(setTimestamp, 1000);
+
+/* ---------- Dynamic Groups ---------- */
+function hideAllDynamicGroups() {
+  issuedFramesGroup.classList.remove('visible');
+  edgeCaseGroup.classList.remove('visible');
+  otherSubGroup.classList.remove('visible');
+  otherReasonGroup.classList.remove('visible');
+  frameStartInput.removeAttribute('required');
+  frameEndInput.removeAttribute('required');
+  edgeCaseDescInput.removeAttribute('required');
+  otherReasonDescInput.removeAttribute('required');
+  edgeCaseSubIssueSelect.removeAttribute('required');
+  edgeCaseDescRequired.style.display = 'none';
+}
+
+issueSelect.addEventListener('change', function () {
+  hideAllDynamicGroups();
+  const value = this.value;
+  if (value === 'Lidar Shift Horizontally') {
+    issuedFramesGroup.classList.add('visible');
+    frameStartInput.setAttribute('required', 'required');
+    frameEndInput.setAttribute('required', 'required');
+  } else if (value === 'edge case') {
+    edgeCaseGroup.classList.add('visible');
+    edgeCaseSubIssueSelect.setAttribute('required', 'required');
+  } else if (value === 'Other') {
+    otherSubGroup.classList.add('visible');
+  }
+});
+
+edgeCaseSubIssueSelect.addEventListener('change', function () {
+  if (this.value === 'Other') {
+    edgeCaseDescInput.setAttribute('required', 'required');
+    edgeCaseDescRequired.style.display = 'inline';
+  } else {
+    edgeCaseDescInput.removeAttribute('required');
+    edgeCaseDescRequired.style.display = 'none';
+  }
+});
+
+otherSubIssueSelect.addEventListener('change', function () {
+  issuedFramesGroup.classList.remove('visible');
+  otherReasonGroup.classList.remove('visible');
+  frameStartInput.removeAttribute('required');
+  frameEndInput.removeAttribute('required');
+  otherReasonDescInput.removeAttribute('required');
+  const subValue = this.value;
+  if (subValue === 'Lidar points shifting vertically') {
+    issuedFramesGroup.classList.add('visible');
+    frameStartInput.setAttribute('required', 'required');
+    frameEndInput.setAttribute('required', 'required');
+  } else if (subValue === 'Other Reason') {
+    otherReasonGroup.classList.add('visible');
+    otherReasonDescInput.setAttribute('required', 'required');
+  }
+});
+
+function validateFrame(input) {
+  input.value = input.value.replace(/\D/g, '');
+  if (input.value.length > 3) input.value = input.value.slice(0, 3);
+}
+
+/* ---------- Auto-fill Task ID ---------- */
+taskLinkInput.addEventListener('input', function () {
+  const match = this.value.match(/\/id\/(\d+)/);
+  if (match && match[1]) taskIdInput.value = match[1];
+});
+
+/* =====================================================
+   ✅ Screenshot Functions
+===================================================== */
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Validation
+  if (!file.type.startsWith('image/')) {
+    setStatus('Error: Please select an image file.', 'error');
+    input.value = '';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    setStatus('Error: Image size must be less than 5MB.', 'error');
+    input.value = '';
+    return;
+  }
+
+  processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    screenshotBase64 = e.target.result;
+    screenshotFileName = file.name || "screenshot.png";
+    previewImage.src = screenshotBase64;
+    previewContainer.classList.add('visible');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function captureScreen() {
+  try {
+    // التحقق من دعم المتصفح
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      setStatus('Error: Screen capture is not supported in this browser. Please use Upload Image instead.', 'error');
+      return;
+    }
+
+    const captureBtn = document.getElementById('captureScreenBtn');
+    captureBtn.disabled = true;
+    captureBtn.textContent = '📸 Capturing...';
+
+    // طلب الإذن لالتقاط الشاشة
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: "always" },
+      audio: false
+    });
+
+    // إيقاف الفيديو فوراً وأخذ فريم واحد
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
+
+    // انتظر قليلاً علشان الفيديو يحمل
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    // إيقاف الـ stream
+    stream.getTracks().forEach(track => track.stop());
+
+    // تحويل لـ base64
+    screenshotBase64 = canvas.toDataURL('image/png', 0.8);
+    screenshotFileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".png";
+    previewImage.src = screenshotBase64;
+    previewContainer.classList.add('visible');
+
+    captureBtn.disabled = false;
+    captureBtn.textContent = '🖥️ Capture Screen';
+
+  } catch (err) {
+    const captureBtn = document.getElementById('captureScreenBtn');
+    captureBtn.disabled = false;
+    captureBtn.textContent = '🖥️ Capture Screen';
+
+    if (err.name === 'NotAllowedError') {
+      setStatus('Screen capture was cancelled or denied.', 'error');
+    } else {
+      setStatus('Error capturing screen: ' + err.message, 'error');
+    }
+  }
+}
+
+function removeScreenshot() {
+  screenshotBase64 = "";
+  screenshotFileName = "";
+  previewImage.src = "";
+  previewContainer.classList.remove('visible');
+  document.getElementById('screenshotFileInput').value = '';
+}
+
+/* ---------- Helpers ---------- */
+function formatNameCase(str) {
+  if (!str) return "";
+  str = str.toLowerCase();
+  return str.replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function formatUser(rawUser) {
+  if (!rawUser) return { valid: false, value: "" };
+  if (rawUser.startsWith("me")) {
+    const digits = rawUser.substring(2);
+    if (/^\d{6}$/.test(digits)) return { valid: true, value: "me" + digits + "@meti.ai" };
+  } else if (/^\d{6}$/.test(rawUser)) {
+    return { valid: true, value: "me" + rawUser + "@meti.ai" };
+  }
+  return { valid: false, value: "" };
+}
+
+function cleanTaskLink(url) {
+  try {
+    url = url.trim();
+    const idMatch = url.match(/\/id\/(\d+)/);
+    if (!idMatch) return url;
+    const id = idMatch[1];
+    const projectMatch = url.match(/\/do\/([^/]+)\/id\//);
+    let finalProject = "SellIvandarQA";
+    if (projectMatch && projectMatch[1]) finalProject = projectMatch[1];
+    return "https://labeling.robot.car/#/tasks/do/" + finalProject + "/id/" + id;
+  } catch (e) { return url; }
+}
+
+function containsUrl(text) {
+  return /(http|https|www\.)/i.test(text);
+}
+
+function setStatus(msg, type) {
+  statusPara.textContent = msg;
+  statusPara.className = type || '';
+}
+
+/* ---------- Modal ---------- */
+function showModal(message) {
+  modalMessage.innerText = message;
+  customModal.style.display = 'flex';
+}
+function closeModal() { customModal.style.display = 'none'; }
+function copyModalMessage() {
+  const text = modalMessage.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    const originalText = btn.innerText;
+    btn.innerText = "Copied!";
+    btn.style.background = "#4dabf7";
+    setTimeout(() => { btn.innerText = originalText; btn.style.background = "#69db7c"; }, 1500);
+  }).catch(() => { alert("Failed to copy text."); });
+}
+
+function getGulpMessage() {
+  const issueVal = issueSelect.value;
+  const start = frameStartInput.value;
+  const end = frameEndInput.value;
+  if (issueVal === "Degraded lidar returns") return "The lidar that is having the issue";
+  if (issueVal === "Lidar Shift Horizontally") return "Lidar Shift Horizontally from " + start + " to " + end;
+  if (issueVal === "edge case") return "edge case";
+  if (issueVal === "Other" && otherSubIssueSelect.value === "Lidar points shifting vertically") {
+    return "Lidar Shift Vertically from " + start + " to " + end;
+  }
+  return "Task Submitted Successfully";
+}
+
+/* =====================================================
+   ✅ Fetch آمن
+===================================================== */
+async function postJSON(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 90000); // 90 ثانية علشان السكرين شوت
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+      cache: "no-store"
+    });
+  } catch (netErr) {
+    clearTimeout(timer);
+    if (netErr && netErr.name === 'AbortError') {
+      throw new Error('Server took too long to respond. Please try again.');
+    }
+    throw new Error('Cannot connect to the server. Check your internet connection.');
+  }
+  clearTimeout(timer);
+
+  const text = await res.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch (e) { data = null; }
+
+  if (!data || typeof data !== 'object') {
+    console.error('Non-JSON response received. Status:', res.status, 'Body:', text.slice(0, 400));
+    const lower = text.toLowerCase();
+
+    if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
+      throw new Error('This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone".');
+    }
+    if (res.status === 404) {
+      throw new Error('The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link.');
+    }
+    if (res.status >= 500) {
+      throw new Error('The script crashed before responding (Error ' + res.status + '). Admin: check Executions log.');
+    }
+    throw new Error('Server returned a page instead of data. Verify deployment settings.');
+  }
+  return data;
+}
+
+/* ---------- Submit ---------- */
+form.addEventListener('submit', async function (e) {
+  e.preventDefault();
+
+  // 1. Labeler Name
+  const labelerVal = labelerNameInput.value.trim();
+  if (labelerVal.length < 3 || /[^a-zA-Z\s]/.test(labelerVal)) { setStatus('Error: Labeler Name must be at least 3 English letters.', 'error'); return; }
+  if (containsUrl(labelerVal)) { setStatus('Error: Links are not allowed in Labeler Name.', 'error'); return; }
+
+  // 2. QC Name
+  const qcVal = qcNameInput.value.trim();
+  if (qcVal.length < 3 || /[^a-zA-Z\s]/.test(qcVal)) { setStatus('Error: QC Name must be at least 3 English letters.', 'error'); return; }
+  if (containsUrl(qcVal)) { setStatus('Error: Links are not allowed in QC Name.', 'error'); return; }
+
+  // 3. User
+  const userResult = formatUser(userInput.value);
+  if (!userResult.valid) { setStatus('Error: User must be 6 digits or me+6 digits.', 'error'); return; }
+
+  // 4. Task Link
+  const taskLinkVal = taskLinkInput.value.trim();
+  if (!taskLinkVal.startsWith("https://labeling.robot.car/#/tasks/do/")) { setStatus('Error: Invalid Task Link. Please use the correct labeling link.', 'error'); return; }
+
+  // 5. Shift
+  if (!shiftSelect.value) { setStatus('Error: Please select a Shift.', 'error'); return; }
+
+  // 6. Frames
+  if (issuedFramesGroup.classList.contains('visible')) {
+    const start = parseInt(frameStartInput.value);
+    const end = parseInt(frameEndInput.value);
+    if (isNaN(start) || isNaN(end)) { setStatus('Error: Frames must be numbers.', 'error'); return; }
+    if (start < 1 || start > 199 || end < 1 || end > 199) { setStatus('Error: Frame range must be between 1 and 199.', 'error'); return; }
+  }
+
+  // 7. Edge Case
+  if (edgeCaseGroup.classList.contains('visible')) {
+    if (!edgeCaseSubIssueSelect.value) { setStatus('Error: Please select an edge case type.', 'error'); return; }
+    if (edgeCaseSubIssueSelect.value === 'Other') {
+      const edgeVal = edgeCaseDescInput.value.trim();
+      if (!edgeVal) { setStatus('Error: Please describe the edge case.', 'error'); return; }
+      if (containsUrl(edgeVal)) { setStatus('Error: Links are not allowed in Description.', 'error'); return; }
+    }
+  }
+
+  // 8. Other Reason
+  if (otherReasonGroup.classList.contains('visible')) {
+    const reasonVal = otherReasonDescInput.value.trim();
+    if (!reasonVal) { setStatus('Error: Please describe the reason.', 'error'); return; }
+    if (containsUrl(reasonVal)) { setStatus('Error: Links are not allowed in Description.', 'error'); return; }
+  }
+
+  // 9. Other sub-selection
+  if (issueSelect.value === 'Other' && !otherSubIssueSelect.value) { setStatus('Error: Please select a specific type for Other.', 'error'); return; }
+
+  // ---------- Data Preparation ----------
+  const formData = new FormData(form);
+  const finalLabelerName = formatNameCase(labelerVal);
+  const finalQcName = formatNameCase(qcVal);
+  const finalUser = userResult.value;
+  const finalLink = cleanTaskLink(taskLinkVal);
+
+  let finalIssue = formData.get('issue');
+  if (finalIssue === 'edge case') {
+    const subIssue = edgeCaseSubIssueSelect.value;
+    finalIssue = (subIssue === 'Other')
+      ? 'edge case: ' + edgeCaseDescInput.value.trim()
+      : 'edge case: ' + subIssue;
+  } else if (finalIssue === 'Other') {
+    const subIssue = otherSubIssueSelect.value;
+    finalIssue = (subIssue === 'Lidar points shifting vertically')
+      ? "Other: Lidar Points Shift Vertically"
+      : 'Other: ' + otherReasonDescInput.value.trim();
+  }
+
+  let finalFrames = "";
+  if (issuedFramesGroup.classList.contains('visible')) {
+    finalFrames = "from frame " + frameStartInput.value + " to frame " + frameEndInput.value;
+  }
+
+  const data = {
+    timestamp: formData.get('timestamp'),
+    labelerName: finalLabelerName,
+    user: finalUser,
+    qcName: finalQcName,
+    taskLink: finalLink,
+    taskId: formData.get('taskId'),
+    taskType: formData.get('taskType'),
+    queueName: formData.get('queueName'),
+    modality: formData.get('modality'),
+    passStatus: formData.get('passStatus'),
+    issue: finalIssue,
+    issuedFrames: finalFrames,
+    edgeCaseDesc: edgeCaseDescInput.value.trim() || "",
+    shift: formData.get('shift'),
+    screenshotData: screenshotBase64 || "",
+    screenshotName: screenshotFileName || ""
+  };
+
+  submitBtn.disabled = true;
+  setStatus('Submitting... (may take a moment if screenshot attached)', '');
+
+  try {
+    const result = await postJSON(data);
+    if (!result.ok) throw new Error(result.error || 'Server rejected the data.');
+    showModal(getGulpMessage());
+    form.reset();
+    removeScreenshot(); // ✅ مسح السكرين شوت بعد السبمت
+    setTimestamp();
+    hideAllDynamicGroups();
+    setStatus('', '');
+  } catch (err) {
+    setStatus('Failed ❌: ' + (err.message || 'Unexpected error.'), 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
