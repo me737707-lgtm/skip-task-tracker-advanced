@@ -11,7 +11,7 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   background-color: #1a1a2e;
   color: #fff;
   padding: 20px;
@@ -28,6 +28,7 @@ body {
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
   position: relative;
   z-index: 1;
+  margin-top: 20px;
 }
 h1 { text-align: center; margin-bottom: 5px; font-size: 2rem; font-weight: 700; color: #ffffff; }
 .prayer-text { text-align: center; margin-bottom: 30px; font-size: 1rem; color: #cbd5e0; font-weight: 600; direction: rtl; }
@@ -73,9 +74,10 @@ button:disabled { background: #3a7ca8; cursor: not-allowed; opacity: 0.7; }
 #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 1.1rem; min-height: 24px; }
 .success { color: #69db7c; }
 .error { color: #ff6b6b; }
+.warning { color: #ffd43b; }
 label span { color: #ff6b6b; }
 
-/* Screenshot Section */
+/* ✅ Screenshot Section */
 .screenshot-section {
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(77, 171, 247, 0.4);
@@ -86,6 +88,7 @@ label span { color: #ff6b6b; }
   transition: all 0.3s;
 }
 .screenshot-section:hover { border-color: rgba(77, 171, 247, 0.8); background: rgba(255, 255, 255, 0.08); }
+.screenshot-section.uploaded { border-color: #69db7c; border-style: solid; background: rgba(105, 219, 124, 0.05); }
 .screenshot-buttons {
   display: flex;
   gap: 10px;
@@ -139,10 +142,98 @@ label span { color: #ff6b6b; }
   line-height: 1;
   padding: 0;
   margin: 0;
-  width: 32px;
 }
 .remove-btn:hover { background: #ff4757; }
 #screenshotFileInput { display: none; }
+
+/* ✅ Progress Bar */
+.upload-progress {
+  margin-top: 15px;
+  display: none;
+}
+.upload-progress.visible { display: block; }
+.progress-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4dabf7, #69db7c);
+  width: 0%;
+  transition: width 0.2s ease;
+  border-radius: 5px;
+}
+.progress-fill.error { background: linear-gradient(90deg, #ff6b6b, #ff4757); }
+.progress-fill.success { background: linear-gradient(90deg, #69db7c, #40c057); }
+#progressLabel {
+  display: block;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #4dabf7;
+  margin-top: 6px;
+  font-weight: 600;
+}
+#progressLabel.error { color: #ff6b6b; }
+#progressLabel.success { color: #69db7c; }
+
+/* ✅ Submission Progress Overlay */
+.submit-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  flex-direction: column;
+  gap: 20px;
+}
+.submit-overlay.visible { display: flex; }
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #4dabf7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.submit-overlay-text {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+.submit-overlay-sub {
+  color: #aaa;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ✅ Data Saved Indicator */
+.save-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(105, 219, 124, 0.15);
+  border: 1px solid #69db7c;
+  color: #69db7c;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 100;
+  pointer-events: none;
+}
+.save-indicator.visible { opacity: 1; }
 
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
@@ -150,6 +241,7 @@ label span { color: #ff6b6b; }
   .frames-container { grid-template-columns: 1fr; }
   .screenshot-buttons { flex-direction: column; }
   .screenshot-btn { width: 100%; }
+  .container { padding: 20px; }
 }
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -196,20 +288,20 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="labelerName">Labeler Name <span>*</span></label>
-        <input type="text" id="labelerName" name="labelerName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+        <input type="text" id="labelerName" name="labelerName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); debouncedSave();">
       </div>
       <div class="form-group">
         <label for="userInput">User <span>*</span></label>
-        <input type="text" id="userInput" name="userInput" placeholder="e.g. me123456 or 123456" required maxlength="8" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+        <input type="text" id="userInput" name="userInput" placeholder="e.g. me123456 or 123456" required maxlength="8" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, ''); debouncedSave();">
         <small>Allowed: 123456 OR me123456 (6 digits required)</small>
       </div>
       <div class="form-group">
         <label for="qcName">Reviewed by (QC Name) <span>*</span></label>
-        <input type="text" id="qcName" name="qcName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+        <input type="text" id="qcName" name="qcName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); debouncedSave();">
       </div>
       <div class="form-group">
         <label for="taskLink">Task Link <span>*</span></label>
-        <input type="url" id="taskLink" name="taskLink" placeholder="Paste labeling link here" required>
+        <input type="url" id="taskLink" name="taskLink" placeholder="Paste labeling link here" required oninput="debouncedSave();">
         <small>Must be a valid labeling.robot.car link</small>
       </div>
       <div class="form-group">
@@ -218,7 +310,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="taskType">Task Type <span>*</span></label>
-        <select id="taskType" name="taskType" required>
+        <select id="taskType" name="taskType" required onchange="debouncedSave();">
           <option value="" disabled selected>Select Type...</option>
           <option value="LIDAR">LIDAR</option>
           <option value="Lane Line">Lane Line</option>
@@ -228,7 +320,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="queueName">Queue Name <span>*</span></label>
-        <select id="queueName" name="queueName" required>
+        <select id="queueName" name="queueName" required onchange="debouncedSave();">
           <option value="" disabled selected>Select Queue...</option>
           <option value="alpine_sc3_full_scene_lane_3d_v4">alpine_sc3_full_scene_lane_3d_v4</option>
           <option value="mpg_sc3_full_scene_mapless_3d_lanes">mpg_sc3_full_scene_mapless_3d_lanes</option>
@@ -239,7 +331,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="modality">Modality <span>*</span></label>
-        <select id="modality" name="modality" required>
+        <select id="modality" name="modality" required onchange="debouncedSave();">
           <option value="" disabled selected>Select Modality...</option>
           <option value="LIDAR FP">LIDAR FP</option>
           <option value="LIDAR QA">LIDAR QA</option>
@@ -253,7 +345,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="passStatus">Pass <span>*</span></label>
-        <select id="passStatus" name="passStatus" required>
+        <select id="passStatus" name="passStatus" required onchange="debouncedSave();">
           <option value="" disabled selected>Select Status...</option>
           <option value="FP">FP</option>
           <option value="QA">QA</option>
@@ -261,7 +353,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="shift">Shift <span>*</span></label>
-        <select id="shift" name="shift" required>
+        <select id="shift" name="shift" required onchange="debouncedSave();">
           <option value="" disabled selected>Select Shift...</option>
           <option value="Morning">Morning</option>
           <option value="Night">Night</option>
@@ -270,7 +362,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width">
         <label for="issue">Issue <span>*</span></label>
-        <select id="issue" name="issue" required>
+        <select id="issue" name="issue" required onchange="debouncedSave();">
           <option value="" disabled selected>Select an issue...</option>
           <option value="edge case">edge case</option>
           <option value="Not a freeway">Not a freeway</option>
@@ -282,7 +374,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width hidden-group" id="edgeCaseGroup">
         <label for="edgeCaseSubIssue">Edge Case Type <span>*</span></label>
-        <select id="edgeCaseSubIssue" name="edgeCaseSubIssue">
+        <select id="edgeCaseSubIssue" name="edgeCaseSubIssue" onchange="debouncedSave();">
           <option value="" disabled selected>Select edge case type...</option>
           <option value="waiting for response">waiting for response</option>
           <option value="edge case">edge case</option>
@@ -292,11 +384,11 @@ label span { color: #ff6b6b; }
           <option value="Other">Other (specify below)</option>
         </select>
         <label for="edgeCaseDesc" style="margin-top: 15px;">Edge Case Description <span id="edgeCaseDescRequired" style="display:none;">*</span></label>
-        <textarea id="edgeCaseDesc" name="edgeCaseDesc" placeholder="Please describe the edge case details here..."></textarea>
+        <textarea id="edgeCaseDesc" name="edgeCaseDesc" placeholder="Please describe the edge case details here..." oninput="debouncedSave();"></textarea>
       </div>
       <div class="form-group full-width hidden-group" id="otherSubGroup">
         <label for="otherSubIssue">Select Other Type <span>*</span></label>
-        <select id="otherSubIssue" name="otherSubIssue">
+        <select id="otherSubIssue" name="otherSubIssue" onchange="debouncedSave();">
           <option value="" disabled selected>Select specific type...</option>
           <option value="Lidar points shifting vertically">Lidar Points Shift Vertically</option>
           <option value="Other Reason">Other Reason</option>
@@ -304,26 +396,26 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width hidden-group" id="otherReasonGroup">
         <label for="otherReasonDesc">Reason Description <span>*</span></label>
-        <textarea id="otherReasonDesc" name="otherReasonDesc" placeholder="Please describe the reason here..."></textarea>
+        <textarea id="otherReasonDesc" name="otherReasonDesc" placeholder="Please describe the reason here..." oninput="debouncedSave();"></textarea>
       </div>
       <div class="form-group full-width hidden-group" id="issuedFramesGroup">
         <label>Issued Frames <span>*</span></label>
         <div class="frames-container">
           <div class="form-group">
             <label style="font-size:0.9rem; color:#4dabf7;">From Frame</label>
-            <input type="text" inputmode="numeric" id="frameStart" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
+            <input type="text" inputmode="numeric" id="frameStart" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this); debouncedSave();">
           </div>
           <div class="form-group">
             <label style="font-size:0.9rem; color:#4dabf7;">To Frame</label>
-            <input type="text" inputmode="numeric" id="frameEnd" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
+            <input type="text" inputmode="numeric" id="frameEnd" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this); debouncedSave();">
           </div>
         </div>
       </div>
 
       <!-- ✅ Screenshot Section -->
       <div class="form-group full-width">
-        <label>📸 Screenshot (Optional)</label>
-        <div class="screenshot-section">
+        <label>📸 Screenshot <span>*</span> (Required)</label>
+        <div class="screenshot-section" id="screenshotSection">
           <div class="screenshot-buttons">
             <button type="button" class="screenshot-btn" id="uploadFileBtn" onclick="document.getElementById('screenshotFileInput').click()">
               📁 Upload Image
@@ -332,12 +424,21 @@ label span { color: #ff6b6b; }
               🖥️ Capture Screen
             </button>
           </div>
-          <input type="file" id="screenshotFileInput" accept="image/*" onchange="handleFileSelect(this)">
+          <input type="file" id="screenshotFileInput" accept="image/png,image/jpeg,image/jpg,image/webp" onchange="handleFileSelect(this)">
+          
+          <!-- ✅ Progress Bar -->
+          <div class="upload-progress" id="uploadProgress">
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressLabel">Preparing...</span>
+          </div>
+
           <div class="preview-container" id="previewContainer">
             <img id="previewImage" src="" alt="Screenshot Preview">
             <button type="button" class="remove-btn" onclick="removeScreenshot()" title="Remove Screenshot">&times;</button>
           </div>
-          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG. Max size: 5MB</small>
+          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG, WEBP. Max size: 5MB. Auto-compressed for faster upload.</small>
         </div>
       </div>
 
@@ -349,6 +450,17 @@ label span { color: #ff6b6b; }
   <p id="status"></p>
 </div>
 
+<!-- ✅ Submission Overlay -->
+<div class="submit-overlay" id="submitOverlay">
+  <div class="spinner"></div>
+  <div class="submit-overlay-text" id="submitOverlayText">Uploading Screenshot...</div>
+  <div class="submit-overlay-sub" id="submitOverlaySub">Please do not close this page</div>
+</div>
+
+<!-- ✅ Data Saved Indicator -->
+<div class="save-indicator" id="saveIndicator">💾 Data saved locally</div>
+
+<!-- ✅ Success Modal -->
 <div id="customModal" class="modal-overlay">
   <div class="modal-content">
     <h2>Task Submitted ✅</h2>
@@ -363,12 +475,23 @@ label span { color: #ff6b6b; }
 
 <script>
 /* =====================================================
-   ✅ رابط الـ API
+   ✅ Configuration
 ===================================================== */
 const INJECTED_URL = "<?= apiUrl ?>";
 const MANUAL_URL = "https://script.google.com/macros/s/AKfycbzc8Q0OmppTYIpjAbm4WtpUkfiLTzJpCsHsxw7058oUDlbVqVlY7NjJ7zV3qY6jWUVY/exec";
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const COMPRESS_MAX_WIDTH = 1280;
+const COMPRESS_QUALITY = 0.7;
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1500;
+const LOCAL_STORAGE_KEY = "skipTaskTrackerFormData";
+const SCREENSHOT_URL_KEY = "skipTaskTrackerScreenshotUrl";
+
+/* =====================================================
+   ✅ DOM Elements
+===================================================== */
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
 const issuedFramesGroup = document.getElementById('issuedFramesGroup');
@@ -393,14 +516,29 @@ const shiftSelect = document.getElementById('shift');
 const submitBtn = document.getElementById('submitBtn');
 const customModal = document.getElementById('customModal');
 const modalMessage = document.getElementById('modalMessage');
-
-// ✅ Screenshot Variables
 const previewContainer = document.getElementById('previewContainer');
 const previewImage = document.getElementById('previewImage');
+const uploadProgress = document.getElementById('uploadProgress');
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const submitOverlay = document.getElementById('submitOverlay');
+const submitOverlayText = document.getElementById('submitOverlayText');
+const submitOverlaySub = document.getElementById('submitOverlaySub');
+const saveIndicator = document.getElementById('saveIndicator');
+const screenshotSection = document.getElementById('screenshotSection');
+
+/* =====================================================
+   ✅ State
+===================================================== */
 let screenshotBase64 = "";
 let screenshotFileName = "";
+let screenshotUrl = ""; // ✅ المخزنة بعد الرفع
+let isUploading = false;
+let isSubmitting = false;
 
-/* ---------- Timestamp ---------- */
+/* =====================================================
+   ✅ Timestamp
+===================================================== */
 function setTimestamp() {
   const now = new Date();
   const options = {
@@ -414,7 +552,9 @@ function setTimestamp() {
 setTimestamp();
 setInterval(setTimestamp, 1000);
 
-/* ---------- Dynamic Groups ---------- */
+/* =====================================================
+   ✅ Dynamic Groups
+===================================================== */
 function hideAllDynamicGroups() {
   issuedFramesGroup.classList.remove('visible');
   edgeCaseGroup.classList.remove('visible');
@@ -475,49 +615,232 @@ function validateFrame(input) {
   if (input.value.length > 3) input.value = input.value.slice(0, 3);
 }
 
-/* ---------- Auto-fill Task ID ---------- */
+/* =====================================================
+   ✅ Auto-fill Task ID
+===================================================== */
 taskLinkInput.addEventListener('input', function () {
   const match = this.value.match(/\/id\/(\d+)/);
   if (match && match[1]) taskIdInput.value = match[1];
 });
 
 /* =====================================================
-   ✅ Screenshot Functions
+   ✅ LocalStorage Backup (Zero Data Loss)
 ===================================================== */
+let saveTimeout;
+function debouncedSave() {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveFormData, 400);
+}
 
+function saveFormData() {
+  try {
+    const data = {
+      labelerName: labelerNameInput.value,
+      userInput: userInput.value,
+      qcName: qcNameInput.value,
+      taskLink: taskLinkInput.value,
+      taskId: taskIdInput.value,
+      taskType: document.getElementById('taskType').value,
+      queueName: document.getElementById('queueName').value,
+      modality: document.getElementById('modality').value,
+      passStatus: document.getElementById('passStatus').value,
+      shift: shiftSelect.value,
+      issue: issueSelect.value,
+      edgeCaseSubIssue: edgeCaseSubIssueSelect.value,
+      edgeCaseDesc: edgeCaseDescInput.value,
+      otherSubIssue: otherSubIssueSelect.value,
+      otherReasonDesc: otherReasonDescInput.value,
+      frameStart: frameStartInput.value,
+      frameEnd: frameEndInput.value,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    if (screenshotUrl) {
+      localStorage.setItem(SCREENSHOT_URL_KEY, screenshotUrl);
+    }
+    showSaveIndicator();
+  } catch (e) {
+    console.warn("Could not save to localStorage:", e);
+  }
+}
+
+function loadFormData() {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) return;
+
+    const data = JSON.parse(saved);
+    const savedTime = new Date(data.savedAt);
+    const hoursDiff = (Date.now() - savedTime.getTime()) / (1000 * 60 * 60);
+
+    // لو الداتا أقدم من 24 ساعة، ما ترجعهاش
+    if (hoursDiff > 24) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(SCREENSHOT_URL_KEY);
+      return;
+    }
+
+    if (data.labelerName) labelerNameInput.value = data.labelerName;
+    if (data.userInput) userInput.value = data.userInput;
+    if (data.qcName) qcNameInput.value = data.qcName;
+    if (data.taskLink) taskLinkInput.value = data.taskLink;
+    if (data.taskId) taskIdInput.value = data.taskId;
+    if (data.taskType) document.getElementById('taskType').value = data.taskType;
+    if (data.queueName) document.getElementById('queueName').value = data.queueName;
+    if (data.modality) document.getElementById('modality').value = data.modality;
+    if (data.passStatus) document.getElementById('passStatus').value = data.passStatus;
+    if (data.shift) shiftSelect.value = data.shift;
+    if (data.issue) {
+      issueSelect.value = data.issue;
+      issueSelect.dispatchEvent(new Event('change'));
+    }
+    if (data.edgeCaseSubIssue) {
+      edgeCaseSubIssueSelect.value = data.edgeCaseSubIssue;
+      edgeCaseSubIssueSelect.dispatchEvent(new Event('change'));
+    }
+    if (data.edgeCaseDesc) edgeCaseDescInput.value = data.edgeCaseDesc;
+    if (data.otherSubIssue) {
+      otherSubIssueSelect.value = data.otherSubIssue;
+      otherSubIssueSelect.dispatchEvent(new Event('change'));
+    }
+    if (data.otherReasonDesc) otherReasonDescInput.value = data.otherReasonDesc;
+    if (data.frameStart) frameStartInput.value = data.frameStart;
+    if (data.frameEnd) frameEndInput.value = data.frameEnd;
+
+    // ✅ استرجاع رابط الصورة لو موجود
+    const savedUrl = localStorage.getItem(SCREENSHOT_URL_KEY);
+    if (savedUrl && savedUrl.startsWith("https://drive.google.com/")) {
+      screenshotUrl = savedUrl;
+      screenshotSection.classList.add('uploaded');
+      setStatus('💡 Previous data restored. Screenshot already uploaded.', 'success');
+      setTimeout(() => setStatus('', ''), 4000);
+    }
+  } catch (e) {
+    console.warn("Could not load from localStorage:", e);
+  }
+}
+
+function clearSavedData() {
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(SCREENSHOT_URL_KEY);
+  } catch (e) {}
+}
+
+let saveIndicatorTimeout;
+function showSaveIndicator() {
+  saveIndicator.classList.add('visible');
+  clearTimeout(saveIndicatorTimeout);
+  saveIndicatorTimeout = setTimeout(() => {
+    saveIndicator.classList.remove('visible');
+  }, 2000);
+}
+
+// ✅ Load on page load
+window.addEventListener('DOMContentLoaded', loadFormData);
+
+// ✅ Save before page unload
+window.addEventListener('beforeunload', function (e) {
+  if (isSubmitting || isUploading) {
+    e.preventDefault();
+    e.returnValue = 'Data is being submitted. Are you sure you want to leave?';
+    return e.returnValue;
+  }
+  saveFormData();
+});
+
+/* =====================================================
+   ✅ Image Compression (Reduce Size for Speed)
+===================================================== */
+function compressImage(file, maxWidth = COMPRESS_MAX_WIDTH, quality = COMPRESS_QUALITY) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Failed to compress image."));
+            return;
+          }
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error("Failed to load image for compression."));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* =====================================================
+   ✅ Screenshot Handling
+===================================================== */
 function handleFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
 
-  // Validation
   if (!file.type.startsWith('image/')) {
-    setStatus('Error: Please select an image file.', 'error');
+    setStatus('Error: Please select an image file (PNG, JPG, JPEG, WEBP).', 'error');
     input.value = '';
     return;
   }
-  if (file.size > 5 * 1024 * 1024) {
+  if (file.size > MAX_IMAGE_SIZE) {
     setStatus('Error: Image size must be less than 5MB.', 'error');
     input.value = '';
     return;
   }
 
   processFile(file);
+  input.value = ''; // Reset input
 }
 
-function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    screenshotBase64 = e.target.result;
-    screenshotFileName = file.name || "screenshot.png";
-    previewImage.src = screenshotBase64;
-    previewContainer.classList.add('visible');
-  };
-  reader.readAsDataURL(file);
+async function processFile(file) {
+  try {
+    updateProgress(0, 'Compressing image...');
+    showProgress(true);
+
+    const compressedBlob = await compressImage(file);
+    screenshotBase64 = await blobToBase64(compressedBlob);
+    screenshotFileName = file.name.replace(/\.[^.]+$/, '') + '_compressed.jpg';
+
+    // ✅ Auto-upload immediately
+    await uploadScreenshotToServer(screenshotBase64, screenshotFileName);
+
+  } catch (err) {
+    updateProgressError('Compression failed: ' + err.message);
+    setStatus('Error processing image: ' + err.message, 'error');
+    screenshotBase64 = "";
+    screenshotUrl = "";
+  }
 }
 
 async function captureScreen() {
   try {
-    // التحقق من دعم المتصفح
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
       setStatus('Error: Screen capture is not supported in this browser. Please use Upload Image instead.', 'error');
       return;
@@ -527,19 +850,15 @@ async function captureScreen() {
     captureBtn.disabled = true;
     captureBtn.textContent = '📸 Capturing...';
 
-    // طلب الإذن لالتقاط الشاشة
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: "always" },
+      video: { cursor: "always", width: { ideal: 1920 }, height: { ideal: 1080 } },
       audio: false
     });
 
-    // إيقاف الفيديو فوراً وأخذ فريم واحد
     const video = document.createElement('video');
     video.srcObject = stream;
     await video.play();
-
-    // انتظر قليلاً علشان الفيديو يحمل
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -547,17 +866,16 @@ async function captureScreen() {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
 
-    // إيقاف الـ stream
     stream.getTracks().forEach(track => track.stop());
 
-    // تحويل لـ base64
-    screenshotBase64 = canvas.toDataURL('image/png', 0.8);
-    screenshotFileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".png";
-    previewImage.src = screenshotBase64;
-    previewContainer.classList.add('visible');
+    screenshotBase64 = canvas.toDataURL('image/jpeg', COMPRESS_QUALITY);
+    screenshotFileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".jpg";
 
     captureBtn.disabled = false;
     captureBtn.textContent = '🖥️ Capture Screen';
+
+    // ✅ Auto-upload immediately
+    await uploadScreenshotToServer(screenshotBase64, screenshotFileName);
 
   } catch (err) {
     const captureBtn = document.getElementById('captureScreenBtn');
@@ -565,22 +883,152 @@ async function captureScreen() {
     captureBtn.textContent = '🖥️ Capture Screen';
 
     if (err.name === 'NotAllowedError') {
-      setStatus('Screen capture was cancelled or denied.', 'error');
+      setStatus('Screen capture was cancelled.', 'warning');
     } else {
       setStatus('Error capturing screen: ' + err.message, 'error');
     }
   }
 }
 
+/* =====================================================
+   ✅ Upload Screenshot with Progress (XHR)
+===================================================== */
+function uploadScreenshotToServer(base64Data, fileName) {
+  return new Promise((resolve, reject) => {
+    if (isUploading) {
+      reject(new Error("Upload already in progress."));
+      return;
+    }
+
+    isUploading = true;
+    showProgress(true);
+    updateProgress(0, 'Uploading screenshot...');
+    screenshotSection.classList.remove('uploaded');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+    xhr.timeout = 120000; // 120 seconds
+
+    // ✅ Progress Tracking
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        updateProgress(percent, 'Uploading screenshot... ' + percent + '%');
+      }
+    };
+
+    xhr.onload = () => {
+      isUploading = false;
+      try {
+        const result = JSON.parse(xhr.responseText);
+        if (result.ok) {
+          screenshotUrl = result.viewUrl;
+          updateProgressSuccess('Screenshot uploaded successfully! ✅');
+          showPreview(base64Data);
+          screenshotSection.classList.add('uploaded');
+          localStorage.setItem(SCREENSHOT_URL_KEY, screenshotUrl);
+          setStatus('Screenshot attached successfully.', 'success');
+          setTimeout(() => setStatus('', ''), 3000);
+          resolve(result);
+        } else {
+          updateProgressError('Upload failed: ' + result.error);
+          screenshotUrl = "";
+          reject(new Error(result.error));
+        }
+      } catch (e) {
+        updateProgressError('Invalid server response.');
+        screenshotUrl = "";
+        reject(new Error('Invalid response from server. Please try again.'));
+      }
+    };
+
+    xhr.onerror = () => {
+      isUploading = false;
+      updateProgressError('Network error during upload.');
+      screenshotUrl = "";
+      reject(new Error('Network error. Please check your connection and try again.'));
+    };
+
+    xhr.ontimeout = () => {
+      isUploading = false;
+      updateProgressError('Upload timed out.');
+      screenshotUrl = "";
+      reject(new Error('Upload took too long. Please try again with a smaller image.'));
+    };
+
+    xhr.send(JSON.stringify({
+      action: 'uploadScreenshot',
+      data: base64Data,
+      fileName: fileName
+    }));
+  });
+}
+
+function showPreview(base64) {
+  previewImage.src = base64;
+  previewContainer.classList.add('visible');
+}
+
 function removeScreenshot() {
   screenshotBase64 = "";
   screenshotFileName = "";
+  screenshotUrl = "";
   previewImage.src = "";
   previewContainer.classList.remove('visible');
-  document.getElementById('screenshotFileInput').value = '';
+  screenshotSection.classList.remove('uploaded');
+  showProgress(false);
+  localStorage.removeItem(SCREENSHOT_URL_KEY);
 }
 
-/* ---------- Helpers ---------- */
+/* =====================================================
+   ✅ Progress Bar Helpers
+===================================================== */
+function showProgress(visible) {
+  uploadProgress.classList.toggle('visible', visible);
+  if (!visible) {
+    progressFill.className = 'progress-fill';
+    progressLabel.className = '';
+  }
+}
+
+function updateProgress(percent, text) {
+  progressFill.className = 'progress-fill';
+  progressLabel.className = '';
+  progressFill.style.width = percent + '%';
+  progressLabel.textContent = text;
+}
+
+function updateProgressSuccess(text) {
+  progressFill.className = 'progress-fill success';
+  progressLabel.className = 'success';
+  progressFill.style.width = '100%';
+  progressLabel.textContent = text;
+}
+
+function updateProgressError(text) {
+  progressFill.className = 'progress-fill error';
+  progressLabel.className = 'error';
+  progressFill.style.width = '100%';
+  progressLabel.textContent = text;
+}
+
+/* =====================================================
+   ✅ Overlay Helpers
+===================================================== */
+function showOverlay(text, sub) {
+  submitOverlayText.textContent = text;
+  submitOverlaySub.textContent = sub || 'Please do not close this page';
+  submitOverlay.classList.add('visible');
+}
+
+function hideOverlay() {
+  submitOverlay.classList.remove('visible');
+}
+
+/* =====================================================
+   ✅ Helpers
+===================================================== */
 function formatNameCase(str) {
   if (!str) return "";
   str = str.toLowerCase();
@@ -620,7 +1068,17 @@ function setStatus(msg, type) {
   statusPara.className = type || '';
 }
 
-/* ---------- Modal ---------- */
+function generateIdempotencyKey() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  }) + '-' + Date.now();
+}
+
+/* =====================================================
+   ✅ Modal
+===================================================== */
 function showModal(message) {
   modalMessage.innerText = message;
   customModal.style.display = 'flex';
@@ -651,77 +1109,92 @@ function getGulpMessage() {
 }
 
 /* =====================================================
-   ✅ Fetch آمن
+   ✅ Fetch with Retry (Zero Data Loss)
 ===================================================== */
-async function postJSON(payload) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 90000); // 90 ثانية علشان السكرين شوت
-  let res;
-  try {
-    res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-      cache: "no-store"
-    });
-  } catch (netErr) {
-    clearTimeout(timer);
-    if (netErr && netErr.name === 'AbortError') {
-      throw new Error('Server took too long to respond. Please try again.');
+async function postJSONWithRetry(payload, maxRetries = MAX_RETRIES) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 60000);
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+        cache: "no-store"
+      });
+      clearTimeout(timer);
+
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { data = null; }
+
+      if (!data || typeof data !== 'object') {
+        const lower = text.toLowerCase();
+        if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1) {
+          throw new Error('Form is not public. Admin: redeploy with "Who has access: Anyone".');
+        }
+        if (res.status === 404) throw new Error('Deployment link invalid (404).');
+        if (res.status >= 500) throw new Error('Server error (' + res.status + ').');
+        throw new Error('Server returned invalid response.');
+      }
+
+      // ✅ لو duplicate، نعتبرها نجاح
+      if (data.duplicate) {
+        return { ok: true, duplicate: true };
+      }
+
+      if (!data.ok) {
+        throw new Error(data.error || 'Server rejected the data.');
+      }
+
+      return data;
+
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = RETRY_DELAY_MS * attempt;
+        submitOverlayText.textContent = 'Retrying... (Attempt ' + (attempt + 1) + '/' + maxRetries + ')';
+        submitOverlaySub.textContent = 'Error: ' + err.message;
+        await new Promise(r => setTimeout(r, delay));
+      }
     }
-    throw new Error('Cannot connect to the server. Check your internet connection.');
   }
-  clearTimeout(timer);
 
-  const text = await res.text();
-  let data = null;
-  try { data = JSON.parse(text); } catch (e) { data = null; }
-
-  if (!data || typeof data !== 'object') {
-    console.error('Non-JSON response received. Status:', res.status, 'Body:', text.slice(0, 400));
-    const lower = text.toLowerCase();
-
-    if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
-      throw new Error('This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone".');
-    }
-    if (res.status === 404) {
-      throw new Error('The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link.');
-    }
-    if (res.status >= 500) {
-      throw new Error('The script crashed before responding (Error ' + res.status + '). Admin: check Executions log.');
-    }
-    throw new Error('Server returned a page instead of data. Verify deployment settings.');
-  }
-  return data;
+  throw lastError || new Error('Failed after ' + maxRetries + ' attempts.');
 }
 
-/* ---------- Submit ---------- */
+/* =====================================================
+   ✅ Form Submission
+===================================================== */
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  // 1. Labeler Name
+  if (isSubmitting || isUploading) {
+    setStatus('Please wait, processing in progress...', 'warning');
+    return;
+  }
+
+  // ========== 1. Validation ==========
   const labelerVal = labelerNameInput.value.trim();
   if (labelerVal.length < 3 || /[^a-zA-Z\s]/.test(labelerVal)) { setStatus('Error: Labeler Name must be at least 3 English letters.', 'error'); return; }
   if (containsUrl(labelerVal)) { setStatus('Error: Links are not allowed in Labeler Name.', 'error'); return; }
 
-  // 2. QC Name
   const qcVal = qcNameInput.value.trim();
   if (qcVal.length < 3 || /[^a-zA-Z\s]/.test(qcVal)) { setStatus('Error: QC Name must be at least 3 English letters.', 'error'); return; }
   if (containsUrl(qcVal)) { setStatus('Error: Links are not allowed in QC Name.', 'error'); return; }
 
-  // 3. User
   const userResult = formatUser(userInput.value);
   if (!userResult.valid) { setStatus('Error: User must be 6 digits or me+6 digits.', 'error'); return; }
 
-  // 4. Task Link
   const taskLinkVal = taskLinkInput.value.trim();
-  if (!taskLinkVal.startsWith("https://labeling.robot.car/#/tasks/do/")) { setStatus('Error: Invalid Task Link. Please use the correct labeling link.', 'error'); return; }
+  if (!taskLinkVal.startsWith("https://labeling.robot.car/#/tasks/do/")) { setStatus('Error: Invalid Task Link.', 'error'); return; }
 
-  // 5. Shift
   if (!shiftSelect.value) { setStatus('Error: Please select a Shift.', 'error'); return; }
 
-  // 6. Frames
   if (issuedFramesGroup.classList.contains('visible')) {
     const start = parseInt(frameStartInput.value);
     const end = parseInt(frameEndInput.value);
@@ -729,7 +1202,6 @@ form.addEventListener('submit', async function (e) {
     if (start < 1 || start > 199 || end < 1 || end > 199) { setStatus('Error: Frame range must be between 1 and 199.', 'error'); return; }
   }
 
-  // 7. Edge Case
   if (edgeCaseGroup.classList.contains('visible')) {
     if (!edgeCaseSubIssueSelect.value) { setStatus('Error: Please select an edge case type.', 'error'); return; }
     if (edgeCaseSubIssueSelect.value === 'Other') {
@@ -739,17 +1211,24 @@ form.addEventListener('submit', async function (e) {
     }
   }
 
-  // 8. Other Reason
   if (otherReasonGroup.classList.contains('visible')) {
     const reasonVal = otherReasonDescInput.value.trim();
     if (!reasonVal) { setStatus('Error: Please describe the reason.', 'error'); return; }
     if (containsUrl(reasonVal)) { setStatus('Error: Links are not allowed in Description.', 'error'); return; }
   }
 
-  // 9. Other sub-selection
   if (issueSelect.value === 'Other' && !otherSubIssueSelect.value) { setStatus('Error: Please select a specific type for Other.', 'error'); return; }
 
-  // ---------- Data Preparation ----------
+  // ✅ Screenshot Required Check
+  if (!screenshotUrl) {
+    setStatus('Error: Screenshot is required. Please upload or capture a screenshot first.', 'error');
+    screenshotSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    screenshotSection.style.borderColor = '#ff6b6b';
+    setTimeout(() => { screenshotSection.style.borderColor = ''; }, 3000);
+    return;
+  }
+
+  // ========== 2. Prepare Data ==========
   const formData = new FormData(form);
   const finalLabelerName = formatNameCase(labelerVal);
   const finalQcName = formatNameCase(qcVal);
@@ -774,7 +1253,11 @@ form.addEventListener('submit', async function (e) {
     finalFrames = "from frame " + frameStartInput.value + " to frame " + frameEndInput.value;
   }
 
+  const idempotencyKey = generateIdempotencyKey();
+
   const data = {
+    action: "submitForm",
+    idempotencyKey: idempotencyKey,
     timestamp: formData.get('timestamp'),
     labelerName: finalLabelerName,
     user: finalUser,
@@ -789,25 +1272,38 @@ form.addEventListener('submit', async function (e) {
     issuedFrames: finalFrames,
     edgeCaseDesc: edgeCaseDescInput.value.trim() || "",
     shift: formData.get('shift'),
-    screenshotData: screenshotBase64 || "",
-    screenshotName: screenshotFileName || ""
+    screenshotUrl: screenshotUrl
   };
 
+  // ========== 3. Submit with Retry ==========
+  isSubmitting = true;
   submitBtn.disabled = true;
-  setStatus('Submitting... (may take a moment if screenshot attached)', '');
+  showOverlay('Submitting Data...', 'Attempt 1/' + MAX_RETRIES);
+  setStatus('', '');
 
   try {
-    const result = await postJSON(data);
-    if (!result.ok) throw new Error(result.error || 'Server rejected the data.');
-    showModal(getGulpMessage());
-    form.reset();
-    removeScreenshot(); // ✅ مسح السكرين شوت بعد السبمت
-    setTimestamp();
-    hideAllDynamicGroups();
-    setStatus('', '');
+    const result = await postJSONWithRetry(data);
+
+    if (result.ok) {
+      // ✅ Success
+      hideOverlay();
+      showModal(getGulpMessage());
+      form.reset();
+      removeScreenshot();
+      clearSavedData();
+      setTimestamp();
+      hideAllDynamicGroups();
+      setStatus('', '');
+    }
   } catch (err) {
+    // ✅ Failure - Keep Data
+    hideOverlay();
     setStatus('Failed ❌: ' + (err.message || 'Unexpected error.'), 'error');
+    // ✅ الداتا محفوظة في localStorage ومش هتضيع
+    saveFormData();
+    setStatus('Failed ❌: ' + err.message + ' — Your data is saved locally. Please try again.', 'error');
   } finally {
+    isSubmitting = false;
     submitBtn.disabled = false;
   }
 });
