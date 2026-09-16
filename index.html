@@ -11,7 +11,7 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   background-color: #1a1a2e;
   color: #fff;
   padding: 20px;
@@ -28,7 +28,6 @@ body {
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
   position: relative;
   z-index: 1;
-  margin-top: 20px;
 }
 h1 { text-align: center; margin-bottom: 5px; font-size: 2rem; font-weight: 700; color: #ffffff; }
 .prayer-text { text-align: center; margin-bottom: 30px; font-size: 1rem; color: #cbd5e0; font-weight: 600; direction: rtl; }
@@ -74,10 +73,11 @@ button:disabled { background: #3a7ca8; cursor: not-allowed; opacity: 0.7; }
 #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 1.1rem; min-height: 24px; }
 .success { color: #69db7c; }
 .error { color: #ff6b6b; }
+.info { color: #4dabf7; }
 .warning { color: #ffd43b; }
 label span { color: #ff6b6b; }
 
-/* ✅ Screenshot Section */
+/* Screenshot Section */
 .screenshot-section {
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(77, 171, 247, 0.4);
@@ -87,8 +87,8 @@ label span { color: #ff6b6b; }
   margin-top: 10px;
   transition: all 0.3s;
 }
+.screenshot-section.required-empty { border-color: rgba(255, 107, 107, 0.6); }
 .screenshot-section:hover { border-color: rgba(77, 171, 247, 0.8); background: rgba(255, 255, 255, 0.08); }
-.screenshot-section.uploaded { border-color: #69db7c; border-style: solid; background: rgba(105, 219, 124, 0.05); }
 .screenshot-buttons {
   display: flex;
   gap: 10px;
@@ -145,95 +145,52 @@ label span { color: #ff6b6b; }
 }
 .remove-btn:hover { background: #ff4757; }
 #screenshotFileInput { display: none; }
+.screenshot-meta { font-size: 0.8rem; color: #8fd19e; margin-top: 8px; }
 
-/* ✅ Progress Bar */
-.upload-progress {
-  margin-top: 15px;
+/* Upload Progress Bar */
+.progress-wrap {
   display: none;
+  margin-top: 20px;
 }
-.upload-progress.visible { display: block; }
+.progress-wrap.visible { display: block; }
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #cbd5e0;
+  margin-bottom: 6px;
+}
 .progress-track {
   width: 100%;
   height: 10px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4dabf7, #69db7c);
   width: 0%;
-  transition: width 0.2s ease;
-  border-radius: 5px;
+  background: linear-gradient(90deg, #4dabf7, #69db7c);
+  border-radius: 6px;
+  transition: width 0.15s ease;
 }
-.progress-fill.error { background: linear-gradient(90deg, #ff6b6b, #ff4757); }
-.progress-fill.success { background: linear-gradient(90deg, #69db7c, #40c057); }
-#progressLabel {
-  display: block;
-  text-align: center;
-  font-size: 0.85rem;
-  color: #4dabf7;
-  margin-top: 6px;
-  font-weight: 600;
-}
-#progressLabel.error { color: #ff6b6b; }
-#progressLabel.success { color: #69db7c; }
 
-/* ✅ Submission Progress Overlay */
-.submit-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+/* Draft restore banner */
+.draft-banner {
   display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  flex-direction: column;
-  gap: 20px;
-}
-.submit-overlay.visible { display: flex; }
-.spinner {
-  width: 60px;
-  height: 60px;
-  border: 5px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #4dabf7;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.submit-overlay-text {
-  color: #fff;
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-align: center;
-}
-.submit-overlay-sub {
-  color: #aaa;
+  background: rgba(255, 212, 59, 0.12);
+  border: 1px solid rgba(255, 212, 59, 0.5);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
   font-size: 0.9rem;
-  text-align: center;
+  color: #ffe08a;
 }
-
-/* ✅ Data Saved Indicator */
-.save-indicator {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(105, 219, 124, 0.15);
-  border: 1px solid #69db7c;
-  color: #69db7c;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 100;
-  pointer-events: none;
-}
-.save-indicator.visible { opacity: 1; }
+.draft-banner.visible { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.draft-banner-buttons { display: flex; gap: 8px; }
+.draft-banner-buttons button { width: auto; margin: 0; padding: 8px 14px; font-size: 0.85rem; }
+.btn-restore { background: #ffd43b; color: #000; }
+.btn-discard { background: rgba(255,255,255,0.15); color: #fff; }
 
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
@@ -241,7 +198,6 @@ label span { color: #ff6b6b; }
   .frames-container { grid-template-columns: 1fr; }
   .screenshot-buttons { flex-direction: column; }
   .screenshot-btn { width: 100%; }
-  .container { padding: 20px; }
 }
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -280,6 +236,15 @@ label span { color: #ff6b6b; }
 <div class="container">
   <h1>Skip Task Tracker</h1>
   <p class="prayer-text">❤️ ادعوا لأخونا علي ويكا بالرحمة والمغفرة ❤️</p>
+
+  <div class="draft-banner" id="draftBanner">
+    <span>💾 We found an unsent submission you started earlier. Restore it?</span>
+    <div class="draft-banner-buttons">
+      <button type="button" class="btn-restore" onclick="restoreDraft()">Restore</button>
+      <button type="button" class="btn-discard" onclick="discardDraft()">Discard</button>
+    </div>
+  </div>
+
   <form id="taskForm" autocomplete="off">
     <div class="form-grid">
       <div class="form-group full-width">
@@ -288,20 +253,20 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="labelerName">Labeler Name <span>*</span></label>
-        <input type="text" id="labelerName" name="labelerName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); debouncedSave();">
+        <input type="text" id="labelerName" name="labelerName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
       </div>
       <div class="form-group">
         <label for="userInput">User <span>*</span></label>
-        <input type="text" id="userInput" name="userInput" placeholder="e.g. me123456 or 123456" required maxlength="8" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, ''); debouncedSave();">
+        <input type="text" id="userInput" name="userInput" placeholder="e.g. me123456 or 123456" required maxlength="8" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
         <small>Allowed: 123456 OR me123456 (6 digits required)</small>
       </div>
       <div class="form-group">
         <label for="qcName">Reviewed by (QC Name) <span>*</span></label>
-        <input type="text" id="qcName" name="qcName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); debouncedSave();">
+        <input type="text" id="qcName" name="qcName" placeholder="English letters only" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
       </div>
       <div class="form-group">
         <label for="taskLink">Task Link <span>*</span></label>
-        <input type="url" id="taskLink" name="taskLink" placeholder="Paste labeling link here" required oninput="debouncedSave();">
+        <input type="url" id="taskLink" name="taskLink" placeholder="Paste labeling link here" required>
         <small>Must be a valid labeling.robot.car link</small>
       </div>
       <div class="form-group">
@@ -310,7 +275,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="taskType">Task Type <span>*</span></label>
-        <select id="taskType" name="taskType" required onchange="debouncedSave();">
+        <select id="taskType" name="taskType" required>
           <option value="" disabled selected>Select Type...</option>
           <option value="LIDAR">LIDAR</option>
           <option value="Lane Line">Lane Line</option>
@@ -320,7 +285,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="queueName">Queue Name <span>*</span></label>
-        <select id="queueName" name="queueName" required onchange="debouncedSave();">
+        <select id="queueName" name="queueName" required>
           <option value="" disabled selected>Select Queue...</option>
           <option value="alpine_sc3_full_scene_lane_3d_v4">alpine_sc3_full_scene_lane_3d_v4</option>
           <option value="mpg_sc3_full_scene_mapless_3d_lanes">mpg_sc3_full_scene_mapless_3d_lanes</option>
@@ -331,7 +296,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="modality">Modality <span>*</span></label>
-        <select id="modality" name="modality" required onchange="debouncedSave();">
+        <select id="modality" name="modality" required>
           <option value="" disabled selected>Select Modality...</option>
           <option value="LIDAR FP">LIDAR FP</option>
           <option value="LIDAR QA">LIDAR QA</option>
@@ -345,7 +310,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="passStatus">Pass <span>*</span></label>
-        <select id="passStatus" name="passStatus" required onchange="debouncedSave();">
+        <select id="passStatus" name="passStatus" required>
           <option value="" disabled selected>Select Status...</option>
           <option value="FP">FP</option>
           <option value="QA">QA</option>
@@ -353,7 +318,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group">
         <label for="shift">Shift <span>*</span></label>
-        <select id="shift" name="shift" required onchange="debouncedSave();">
+        <select id="shift" name="shift" required>
           <option value="" disabled selected>Select Shift...</option>
           <option value="Morning">Morning</option>
           <option value="Night">Night</option>
@@ -362,7 +327,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width">
         <label for="issue">Issue <span>*</span></label>
-        <select id="issue" name="issue" required onchange="debouncedSave();">
+        <select id="issue" name="issue" required>
           <option value="" disabled selected>Select an issue...</option>
           <option value="edge case">edge case</option>
           <option value="Not a freeway">Not a freeway</option>
@@ -374,7 +339,7 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width hidden-group" id="edgeCaseGroup">
         <label for="edgeCaseSubIssue">Edge Case Type <span>*</span></label>
-        <select id="edgeCaseSubIssue" name="edgeCaseSubIssue" onchange="debouncedSave();">
+        <select id="edgeCaseSubIssue" name="edgeCaseSubIssue">
           <option value="" disabled selected>Select edge case type...</option>
           <option value="waiting for response">waiting for response</option>
           <option value="edge case">edge case</option>
@@ -384,11 +349,11 @@ label span { color: #ff6b6b; }
           <option value="Other">Other (specify below)</option>
         </select>
         <label for="edgeCaseDesc" style="margin-top: 15px;">Edge Case Description <span id="edgeCaseDescRequired" style="display:none;">*</span></label>
-        <textarea id="edgeCaseDesc" name="edgeCaseDesc" placeholder="Please describe the edge case details here..." oninput="debouncedSave();"></textarea>
+        <textarea id="edgeCaseDesc" name="edgeCaseDesc" placeholder="Please describe the edge case details here..."></textarea>
       </div>
       <div class="form-group full-width hidden-group" id="otherSubGroup">
         <label for="otherSubIssue">Select Other Type <span>*</span></label>
-        <select id="otherSubIssue" name="otherSubIssue" onchange="debouncedSave();">
+        <select id="otherSubIssue" name="otherSubIssue">
           <option value="" disabled selected>Select specific type...</option>
           <option value="Lidar points shifting vertically">Lidar Points Shift Vertically</option>
           <option value="Other Reason">Other Reason</option>
@@ -396,25 +361,25 @@ label span { color: #ff6b6b; }
       </div>
       <div class="form-group full-width hidden-group" id="otherReasonGroup">
         <label for="otherReasonDesc">Reason Description <span>*</span></label>
-        <textarea id="otherReasonDesc" name="otherReasonDesc" placeholder="Please describe the reason here..." oninput="debouncedSave();"></textarea>
+        <textarea id="otherReasonDesc" name="otherReasonDesc" placeholder="Please describe the reason here..."></textarea>
       </div>
       <div class="form-group full-width hidden-group" id="issuedFramesGroup">
         <label>Issued Frames <span>*</span></label>
         <div class="frames-container">
           <div class="form-group">
             <label style="font-size:0.9rem; color:#4dabf7;">From Frame</label>
-            <input type="text" inputmode="numeric" id="frameStart" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this); debouncedSave();">
+            <input type="text" inputmode="numeric" id="frameStart" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
           </div>
           <div class="form-group">
             <label style="font-size:0.9rem; color:#4dabf7;">To Frame</label>
-            <input type="text" inputmode="numeric" id="frameEnd" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this); debouncedSave();">
+            <input type="text" inputmode="numeric" id="frameEnd" placeholder="Max 3 digits (1-199)" oninput="validateFrame(this)">
           </div>
         </div>
       </div>
 
-      <!-- ✅ Screenshot Section -->
+      <!-- ✅ Screenshot Section (NOW REQUIRED) -->
       <div class="form-group full-width">
-        <label>📸 Screenshot <span>*</span> (Required)</label>
+        <label>📸 Screenshot <span>*</span> (required)</label>
         <div class="screenshot-section" id="screenshotSection">
           <div class="screenshot-buttons">
             <button type="button" class="screenshot-btn" id="uploadFileBtn" onclick="document.getElementById('screenshotFileInput').click()">
@@ -424,21 +389,23 @@ label span { color: #ff6b6b; }
               🖥️ Capture Screen
             </button>
           </div>
-          <input type="file" id="screenshotFileInput" accept="image/png,image/jpeg,image/jpg,image/webp" onchange="handleFileSelect(this)">
-          
-          <!-- ✅ Progress Bar -->
-          <div class="upload-progress" id="uploadProgress">
-            <div class="progress-track">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <span id="progressLabel">Preparing...</span>
-          </div>
-
+          <input type="file" id="screenshotFileInput" accept="image/*" onchange="handleFileSelect(this)">
           <div class="preview-container" id="previewContainer">
             <img id="previewImage" src="" alt="Screenshot Preview">
             <button type="button" class="remove-btn" onclick="removeScreenshot()" title="Remove Screenshot">&times;</button>
           </div>
-          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG, WEBP. Max size: 5MB. Auto-compressed for faster upload.</small>
+          <div class="screenshot-meta" id="screenshotMeta"></div>
+          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG. Max size: 5MB. Images are automatically optimized before upload.</small>
+        </div>
+      </div>
+
+      <div class="full-width progress-wrap" id="progressWrap">
+        <div class="progress-label">
+          <span id="progressPhaseLabel">Uploading...</span>
+          <span id="progressPercentLabel">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
         </div>
       </div>
 
@@ -450,17 +417,6 @@ label span { color: #ff6b6b; }
   <p id="status"></p>
 </div>
 
-<!-- ✅ Submission Overlay -->
-<div class="submit-overlay" id="submitOverlay">
-  <div class="spinner"></div>
-  <div class="submit-overlay-text" id="submitOverlayText">Uploading Screenshot...</div>
-  <div class="submit-overlay-sub" id="submitOverlaySub">Please do not close this page</div>
-</div>
-
-<!-- ✅ Data Saved Indicator -->
-<div class="save-indicator" id="saveIndicator">💾 Data saved locally</div>
-
-<!-- ✅ Success Modal -->
 <div id="customModal" class="modal-overlay">
   <div class="modal-content">
     <h2>Task Submitted ✅</h2>
@@ -475,23 +431,20 @@ label span { color: #ff6b6b; }
 
 <script>
 /* =====================================================
-   ✅ Configuration
+   ✅ رابط الـ API
 ===================================================== */
 const INJECTED_URL = "<?= apiUrl ?>";
 const MANUAL_URL = "https://script.google.com/macros/s/AKfycbzc8Q0OmppTYIpjAbm4WtpUkfiLTzJpCsHsxw7058oUDlbVqVlY7NjJ7zV3qY6jWUVY/exec";
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const COMPRESS_MAX_WIDTH = 1280;
-const COMPRESS_QUALITY = 0.7;
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1500;
-const LOCAL_STORAGE_KEY = "skipTaskTrackerFormData";
-const SCREENSHOT_URL_KEY = "skipTaskTrackerScreenshotUrl";
+/* ✅ v7: إعدادات الـ Retry / Compression / Draft */
+const MAX_SUBMIT_RETRIES = 3;            // عدد محاولات إعادة الإرسال التلقائية عند فشل الشبكة
+const RETRY_BASE_DELAY_MS = 1500;        // Backoff بين المحاولات
+const SUBMIT_TIMEOUT_MS = 90000;         // مهلة كل محاولة
+const IMAGE_MAX_DIMENSION = 1600;        // أقصى عرض/ارتفاع بعد الضغط
+const IMAGE_JPEG_QUALITY = 0.72;         // جودة الضغط (كل ما قلّت، السرعة زادت)
+const DRAFT_STORAGE_KEY = "skipTaskTracker_draft_v7";
 
-/* =====================================================
-   ✅ DOM Elements
-===================================================== */
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
 const issuedFramesGroup = document.getElementById('issuedFramesGroup');
@@ -516,29 +469,24 @@ const shiftSelect = document.getElementById('shift');
 const submitBtn = document.getElementById('submitBtn');
 const customModal = document.getElementById('customModal');
 const modalMessage = document.getElementById('modalMessage');
+const screenshotSection = document.getElementById('screenshotSection');
+const draftBanner = document.getElementById('draftBanner');
+
+// Progress bar elements
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressPercentLabel = document.getElementById('progressPercentLabel');
+const progressPhaseLabel = document.getElementById('progressPhaseLabel');
+
+// ✅ Screenshot Variables
 const previewContainer = document.getElementById('previewContainer');
 const previewImage = document.getElementById('previewImage');
-const uploadProgress = document.getElementById('uploadProgress');
-const progressFill = document.getElementById('progressFill');
-const progressLabel = document.getElementById('progressLabel');
-const submitOverlay = document.getElementById('submitOverlay');
-const submitOverlayText = document.getElementById('submitOverlayText');
-const submitOverlaySub = document.getElementById('submitOverlaySub');
-const saveIndicator = document.getElementById('saveIndicator');
-const screenshotSection = document.getElementById('screenshotSection');
-
-/* =====================================================
-   ✅ State
-===================================================== */
-let screenshotBase64 = "";
+const screenshotMeta = document.getElementById('screenshotMeta');
+let screenshotBase64 = "";       // النسخة المضغوطة الجاهزة للإرسال
 let screenshotFileName = "";
-let screenshotUrl = ""; // ✅ المخزنة بعد الرفع
-let isUploading = false;
-let isSubmitting = false;
+let existingScreenshotUrl = "";  // ✅ لو صورة اترفعت فعلاً في محاولة سابقة فاشلة، منرفعهاش تاني
 
-/* =====================================================
-   ✅ Timestamp
-===================================================== */
+/* ---------- Timestamp ---------- */
 function setTimestamp() {
   const now = new Date();
   const options = {
@@ -552,9 +500,7 @@ function setTimestamp() {
 setTimestamp();
 setInterval(setTimestamp, 1000);
 
-/* =====================================================
-   ✅ Dynamic Groups
-===================================================== */
+/* ---------- Dynamic Groups ---------- */
 function hideAllDynamicGroups() {
   issuedFramesGroup.classList.remove('visible');
   edgeCaseGroup.classList.remove('visible');
@@ -581,6 +527,7 @@ issueSelect.addEventListener('change', function () {
   } else if (value === 'Other') {
     otherSubGroup.classList.add('visible');
   }
+  scheduleDraftSave();
 });
 
 edgeCaseSubIssueSelect.addEventListener('change', function () {
@@ -591,6 +538,7 @@ edgeCaseSubIssueSelect.addEventListener('change', function () {
     edgeCaseDescInput.removeAttribute('required');
     edgeCaseDescRequired.style.display = 'none';
   }
+  scheduleDraftSave();
 });
 
 otherSubIssueSelect.addEventListener('change', function () {
@@ -608,6 +556,7 @@ otherSubIssueSelect.addEventListener('change', function () {
     otherReasonGroup.classList.add('visible');
     otherReasonDescInput.setAttribute('required', 'required');
   }
+  scheduleDraftSave();
 });
 
 function validateFrame(input) {
@@ -615,228 +564,115 @@ function validateFrame(input) {
   if (input.value.length > 3) input.value = input.value.slice(0, 3);
 }
 
-/* =====================================================
-   ✅ Auto-fill Task ID
-===================================================== */
+/* ---------- Auto-fill Task ID ---------- */
 taskLinkInput.addEventListener('input', function () {
   const match = this.value.match(/\/id\/(\d+)/);
   if (match && match[1]) taskIdInput.value = match[1];
 });
 
 /* =====================================================
-   ✅ LocalStorage Backup (Zero Data Loss)
+   ✅ v7: ضغط الصورة قبل الإرسال (Resize + JPEG)
+   بيقلل حجم الصورة بشكل كبير عشان الرفع يبقى أسرع بكتير
+   وأقل عرضة للفشل تحت ضغط أو نت ضعيف.
 ===================================================== */
-let saveTimeout;
-function debouncedSave() {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveFormData, 400);
-}
-
-function saveFormData() {
-  try {
-    const data = {
-      labelerName: labelerNameInput.value,
-      userInput: userInput.value,
-      qcName: qcNameInput.value,
-      taskLink: taskLinkInput.value,
-      taskId: taskIdInput.value,
-      taskType: document.getElementById('taskType').value,
-      queueName: document.getElementById('queueName').value,
-      modality: document.getElementById('modality').value,
-      passStatus: document.getElementById('passStatus').value,
-      shift: shiftSelect.value,
-      issue: issueSelect.value,
-      edgeCaseSubIssue: edgeCaseSubIssueSelect.value,
-      edgeCaseDesc: edgeCaseDescInput.value,
-      otherSubIssue: otherSubIssueSelect.value,
-      otherReasonDesc: otherReasonDescInput.value,
-      frameStart: frameStartInput.value,
-      frameEnd: frameEndInput.value,
-      savedAt: new Date().toISOString()
-    };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-    if (screenshotUrl) {
-      localStorage.setItem(SCREENSHOT_URL_KEY, screenshotUrl);
-    }
-    showSaveIndicator();
-  } catch (e) {
-    console.warn("Could not save to localStorage:", e);
-  }
-}
-
-function loadFormData() {
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!saved) return;
-
-    const data = JSON.parse(saved);
-    const savedTime = new Date(data.savedAt);
-    const hoursDiff = (Date.now() - savedTime.getTime()) / (1000 * 60 * 60);
-
-    // لو الداتا أقدم من 24 ساعة، ما ترجعهاش
-    if (hoursDiff > 24) {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-      localStorage.removeItem(SCREENSHOT_URL_KEY);
-      return;
-    }
-
-    if (data.labelerName) labelerNameInput.value = data.labelerName;
-    if (data.userInput) userInput.value = data.userInput;
-    if (data.qcName) qcNameInput.value = data.qcName;
-    if (data.taskLink) taskLinkInput.value = data.taskLink;
-    if (data.taskId) taskIdInput.value = data.taskId;
-    if (data.taskType) document.getElementById('taskType').value = data.taskType;
-    if (data.queueName) document.getElementById('queueName').value = data.queueName;
-    if (data.modality) document.getElementById('modality').value = data.modality;
-    if (data.passStatus) document.getElementById('passStatus').value = data.passStatus;
-    if (data.shift) shiftSelect.value = data.shift;
-    if (data.issue) {
-      issueSelect.value = data.issue;
-      issueSelect.dispatchEvent(new Event('change'));
-    }
-    if (data.edgeCaseSubIssue) {
-      edgeCaseSubIssueSelect.value = data.edgeCaseSubIssue;
-      edgeCaseSubIssueSelect.dispatchEvent(new Event('change'));
-    }
-    if (data.edgeCaseDesc) edgeCaseDescInput.value = data.edgeCaseDesc;
-    if (data.otherSubIssue) {
-      otherSubIssueSelect.value = data.otherSubIssue;
-      otherSubIssueSelect.dispatchEvent(new Event('change'));
-    }
-    if (data.otherReasonDesc) otherReasonDescInput.value = data.otherReasonDesc;
-    if (data.frameStart) frameStartInput.value = data.frameStart;
-    if (data.frameEnd) frameEndInput.value = data.frameEnd;
-
-    // ✅ استرجاع رابط الصورة لو موجود
-    const savedUrl = localStorage.getItem(SCREENSHOT_URL_KEY);
-    if (savedUrl && savedUrl.startsWith("https://drive.google.com/")) {
-      screenshotUrl = savedUrl;
-      screenshotSection.classList.add('uploaded');
-      setStatus('💡 Previous data restored. Screenshot already uploaded.', 'success');
-      setTimeout(() => setStatus('', ''), 4000);
-    }
-  } catch (e) {
-    console.warn("Could not load from localStorage:", e);
-  }
-}
-
-function clearSavedData() {
-  try {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-    localStorage.removeItem(SCREENSHOT_URL_KEY);
-  } catch (e) {}
-}
-
-let saveIndicatorTimeout;
-function showSaveIndicator() {
-  saveIndicator.classList.add('visible');
-  clearTimeout(saveIndicatorTimeout);
-  saveIndicatorTimeout = setTimeout(() => {
-    saveIndicator.classList.remove('visible');
-  }, 2000);
-}
-
-// ✅ Load on page load
-window.addEventListener('DOMContentLoaded', loadFormData);
-
-// ✅ Save before page unload
-window.addEventListener('beforeunload', function (e) {
-  if (isSubmitting || isUploading) {
-    e.preventDefault();
-    e.returnValue = 'Data is being submitted. Are you sure you want to leave?';
-    return e.returnValue;
-  }
-  saveFormData();
-});
-
-/* =====================================================
-   ✅ Image Compression (Reduce Size for Speed)
-===================================================== */
-function compressImage(file, maxWidth = COMPRESS_MAX_WIDTH, quality = COMPRESS_QUALITY) {
+function compressImage(dataUrl) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+    const img = new Image();
+    img.onload = function () {
+      let w = img.width;
+      let h = img.height;
+      if (w > IMAGE_MAX_DIMENSION || h > IMAGE_MAX_DIMENSION) {
+        if (w >= h) {
+          h = Math.round(h * (IMAGE_MAX_DIMENSION / w));
+          w = IMAGE_MAX_DIMENSION;
+        } else {
+          w = Math.round(w * (IMAGE_MAX_DIMENSION / h));
+          h = IMAGE_MAX_DIMENSION;
         }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error("Failed to compress image."));
-            return;
-          }
-          resolve(blob);
-        }, 'image/jpeg', quality);
-      };
-      img.onerror = () => reject(new Error("Failed to load image for compression."));
-      img.src = e.target.result;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      try {
+        const compressed = canvas.toDataURL('image/jpeg', IMAGE_JPEG_QUALITY);
+        resolve(compressed);
+      } catch (e) {
+        reject(e);
+      }
     };
-    reader.onerror = () => reject(new Error("Failed to read file."));
-    reader.readAsDataURL(file);
+    img.onerror = function () { reject(new Error('Could not load image for compression.')); };
+    img.src = dataUrl;
   });
 }
 
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+function estimateBase64Bytes(dataUrl) {
+  const base64 = dataUrl.split(',')[1] || '';
+  return Math.floor(base64.length * 0.75);
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
 /* =====================================================
-   ✅ Screenshot Handling
+   ✅ Screenshot Functions
 ===================================================== */
+
 function handleFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    setStatus('Error: Please select an image file (PNG, JPG, JPEG, WEBP).', 'error');
+    setStatus('Error: Please select an image file.', 'error');
     input.value = '';
     return;
   }
-  if (file.size > MAX_IMAGE_SIZE) {
+  if (file.size > 5 * 1024 * 1024) {
     setStatus('Error: Image size must be less than 5MB.', 'error');
     input.value = '';
     return;
   }
 
   processFile(file);
-  input.value = ''; // Reset input
 }
 
 async function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = async function (e) {
+    await applyCompressedScreenshot(e.target.result, file.name || "screenshot.png");
+  };
+  reader.readAsDataURL(file);
+}
+
+async function applyCompressedScreenshot(rawDataUrl, fileName) {
+  existingScreenshotUrl = ""; // أي صورة جديدة بتلغي أي رابط قديم محفوظ من Retry سابق
+  setStatus('Optimizing image...', 'info');
   try {
-    updateProgress(0, 'Compressing image...');
-    showProgress(true);
-
-    const compressedBlob = await compressImage(file);
-    screenshotBase64 = await blobToBase64(compressedBlob);
-    screenshotFileName = file.name.replace(/\.[^.]+$/, '') + '_compressed.jpg';
-
-    // ✅ Auto-upload immediately
-    await uploadScreenshotToServer(screenshotBase64, screenshotFileName);
-
+    const compressed = await compressImage(rawDataUrl);
+    screenshotBase64 = compressed;
+    screenshotFileName = (fileName.replace(/\.[^/.]+$/, "") || "screenshot") + ".jpg";
+    previewImage.src = screenshotBase64;
+    previewContainer.classList.add('visible');
+    screenshotSection.classList.remove('required-empty');
+    screenshotMeta.textContent = "Optimized size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
+    setStatus('', '');
   } catch (err) {
-    updateProgressError('Compression failed: ' + err.message);
-    setStatus('Error processing image: ' + err.message, 'error');
-    screenshotBase64 = "";
-    screenshotUrl = "";
+    // لو الضغط فشل لأي سبب، استخدم الصورة الأصلية بدل ما نمنع اليوزر من الإرسال
+    screenshotBase64 = rawDataUrl;
+    screenshotFileName = fileName;
+    previewImage.src = screenshotBase64;
+    previewContainer.classList.add('visible');
+    screenshotSection.classList.remove('required-empty');
+    screenshotMeta.textContent = "Size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
+    setStatus('', '');
   }
+  scheduleDraftSave();
 }
 
 async function captureScreen() {
@@ -851,14 +687,14 @@ async function captureScreen() {
     captureBtn.textContent = '📸 Capturing...';
 
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: "always", width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { cursor: "always" },
       audio: false
     });
 
     const video = document.createElement('video');
     video.srcObject = stream;
     await video.play();
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -868,14 +704,13 @@ async function captureScreen() {
 
     stream.getTracks().forEach(track => track.stop());
 
-    screenshotBase64 = canvas.toDataURL('image/jpeg', COMPRESS_QUALITY);
-    screenshotFileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".jpg";
+    const rawDataUrl = canvas.toDataURL('image/png');
+    const fileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".png";
 
     captureBtn.disabled = false;
     captureBtn.textContent = '🖥️ Capture Screen';
 
-    // ✅ Auto-upload immediately
-    await uploadScreenshotToServer(screenshotBase64, screenshotFileName);
+    await applyCompressedScreenshot(rawDataUrl, fileName);
 
   } catch (err) {
     const captureBtn = document.getElementById('captureScreenBtn');
@@ -883,152 +718,25 @@ async function captureScreen() {
     captureBtn.textContent = '🖥️ Capture Screen';
 
     if (err.name === 'NotAllowedError') {
-      setStatus('Screen capture was cancelled.', 'warning');
+      setStatus('Screen capture was cancelled or denied.', 'error');
     } else {
       setStatus('Error capturing screen: ' + err.message, 'error');
     }
   }
 }
 
-/* =====================================================
-   ✅ Upload Screenshot with Progress (XHR)
-===================================================== */
-function uploadScreenshotToServer(base64Data, fileName) {
-  return new Promise((resolve, reject) => {
-    if (isUploading) {
-      reject(new Error("Upload already in progress."));
-      return;
-    }
-
-    isUploading = true;
-    showProgress(true);
-    updateProgress(0, 'Uploading screenshot...');
-    screenshotSection.classList.remove('uploaded');
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', API_URL, true);
-    xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-    xhr.timeout = 120000; // 120 seconds
-
-    // ✅ Progress Tracking
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        updateProgress(percent, 'Uploading screenshot... ' + percent + '%');
-      }
-    };
-
-    xhr.onload = () => {
-      isUploading = false;
-      try {
-        const result = JSON.parse(xhr.responseText);
-        if (result.ok) {
-          screenshotUrl = result.viewUrl;
-          updateProgressSuccess('Screenshot uploaded successfully! ✅');
-          showPreview(base64Data);
-          screenshotSection.classList.add('uploaded');
-          localStorage.setItem(SCREENSHOT_URL_KEY, screenshotUrl);
-          setStatus('Screenshot attached successfully.', 'success');
-          setTimeout(() => setStatus('', ''), 3000);
-          resolve(result);
-        } else {
-          updateProgressError('Upload failed: ' + result.error);
-          screenshotUrl = "";
-          reject(new Error(result.error));
-        }
-      } catch (e) {
-        updateProgressError('Invalid server response.');
-        screenshotUrl = "";
-        reject(new Error('Invalid response from server. Please try again.'));
-      }
-    };
-
-    xhr.onerror = () => {
-      isUploading = false;
-      updateProgressError('Network error during upload.');
-      screenshotUrl = "";
-      reject(new Error('Network error. Please check your connection and try again.'));
-    };
-
-    xhr.ontimeout = () => {
-      isUploading = false;
-      updateProgressError('Upload timed out.');
-      screenshotUrl = "";
-      reject(new Error('Upload took too long. Please try again with a smaller image.'));
-    };
-
-    xhr.send(JSON.stringify({
-      action: 'uploadScreenshot',
-      data: base64Data,
-      fileName: fileName
-    }));
-  });
-}
-
-function showPreview(base64) {
-  previewImage.src = base64;
-  previewContainer.classList.add('visible');
-}
-
 function removeScreenshot() {
   screenshotBase64 = "";
   screenshotFileName = "";
-  screenshotUrl = "";
+  existingScreenshotUrl = "";
   previewImage.src = "";
   previewContainer.classList.remove('visible');
-  screenshotSection.classList.remove('uploaded');
-  showProgress(false);
-  localStorage.removeItem(SCREENSHOT_URL_KEY);
+  screenshotMeta.textContent = "";
+  document.getElementById('screenshotFileInput').value = '';
+  scheduleDraftSave();
 }
 
-/* =====================================================
-   ✅ Progress Bar Helpers
-===================================================== */
-function showProgress(visible) {
-  uploadProgress.classList.toggle('visible', visible);
-  if (!visible) {
-    progressFill.className = 'progress-fill';
-    progressLabel.className = '';
-  }
-}
-
-function updateProgress(percent, text) {
-  progressFill.className = 'progress-fill';
-  progressLabel.className = '';
-  progressFill.style.width = percent + '%';
-  progressLabel.textContent = text;
-}
-
-function updateProgressSuccess(text) {
-  progressFill.className = 'progress-fill success';
-  progressLabel.className = 'success';
-  progressFill.style.width = '100%';
-  progressLabel.textContent = text;
-}
-
-function updateProgressError(text) {
-  progressFill.className = 'progress-fill error';
-  progressLabel.className = 'error';
-  progressFill.style.width = '100%';
-  progressLabel.textContent = text;
-}
-
-/* =====================================================
-   ✅ Overlay Helpers
-===================================================== */
-function showOverlay(text, sub) {
-  submitOverlayText.textContent = text;
-  submitOverlaySub.textContent = sub || 'Please do not close this page';
-  submitOverlay.classList.add('visible');
-}
-
-function hideOverlay() {
-  submitOverlay.classList.remove('visible');
-}
-
-/* =====================================================
-   ✅ Helpers
-===================================================== */
+/* ---------- Helpers ---------- */
 function formatNameCase(str) {
   if (!str) return "";
   str = str.toLowerCase();
@@ -1068,17 +776,23 @@ function setStatus(msg, type) {
   statusPara.className = type || '';
 }
 
-function generateIdempotencyKey() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  }) + '-' + Date.now();
+/* ---------- Progress Bar ---------- */
+function showProgress(phaseLabel) {
+  progressWrap.classList.add('visible');
+  progressPhaseLabel.textContent = phaseLabel || 'Uploading...';
+  setProgress(0);
+}
+function setProgress(percent) {
+  const p = Math.max(0, Math.min(100, Math.round(percent)));
+  progressFill.style.width = p + '%';
+  progressPercentLabel.textContent = p + '%';
+}
+function hideProgress() {
+  progressWrap.classList.remove('visible');
+  setProgress(0);
 }
 
-/* =====================================================
-   ✅ Modal
-===================================================== */
+/* ---------- Modal ---------- */
 function showModal(message) {
   modalMessage.innerText = message;
   customModal.style.display = 'flex';
@@ -1109,92 +823,238 @@ function getGulpMessage() {
 }
 
 /* =====================================================
-   ✅ Fetch with Retry (Zero Data Loss)
+   ✅ v7: إرسال عن طريق XMLHttpRequest (بدل fetch) عشان
+   نقدر نتابع تقدّم الرفع (upload.onprogress) ونعرضه في الـ Progress Bar.
 ===================================================== */
-async function postJSONWithRetry(payload, maxRetries = MAX_RETRIES) {
-  let lastError = null;
+function postWithProgress(payload) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+    xhr.timeout = SUBMIT_TIMEOUT_MS;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 60000);
+    xhr.upload.onprogress = function (evt) {
+      if (evt.lengthComputable) {
+        // نحجز آخر 5% لوقت معالجة السيرفر (رفع الصورة على Drive + الكتابة في الشيت)
+        setProgress((evt.loaded / evt.total) * 95);
+      }
+    };
+    xhr.upload.onload = function () {
+      setProgress(96);
+      progressPhaseLabel.textContent = 'Saving on server...';
+    };
 
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-        cache: "no-store"
-      });
-      clearTimeout(timer);
-
-      const text = await res.text();
+    xhr.onload = function () {
+      setProgress(100);
       let data = null;
-      try { data = JSON.parse(text); } catch (e) { data = null; }
+      try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
 
       if (!data || typeof data !== 'object') {
+        const text = xhr.responseText || '';
         const lower = text.toLowerCase();
-        if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1) {
-          throw new Error('Form is not public. Admin: redeploy with "Who has access: Anyone".');
+        if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
+          reject({ networkLevel: true, message: 'This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone".' });
+        } else if (xhr.status === 404) {
+          reject({ networkLevel: true, message: 'The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link.' });
+        } else if (xhr.status >= 500) {
+          reject({ networkLevel: true, message: 'The script crashed before responding (Error ' + xhr.status + '). Admin: check Executions log.' });
+        } else {
+          reject({ networkLevel: true, message: 'Server returned a page instead of data. Verify deployment settings.' });
         }
-        if (res.status === 404) throw new Error('Deployment link invalid (404).');
-        if (res.status >= 500) throw new Error('Server error (' + res.status + ').');
-        throw new Error('Server returned invalid response.');
+        return;
       }
+      resolve(data);
+    };
 
-      // ✅ لو duplicate، نعتبرها نجاح
-      if (data.duplicate) {
-        return { ok: true, duplicate: true };
+    xhr.onerror = function () {
+      reject({ networkLevel: true, message: 'Cannot connect to the server. Check your internet connection.' });
+    };
+    xhr.ontimeout = function () {
+      reject({ networkLevel: true, message: 'Server took too long to respond.' });
+    };
+
+    xhr.send(JSON.stringify(payload));
+  });
+}
+
+/* ✅ v7: إعادة المحاولة التلقائية - بس على أخطاء الشبكة/السيرفر،
+   مش على أخطاء التحقق (Validation) اللي محتاجة تدخل من اليوزر */
+async function submitWithRetry(payload) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
+    try {
+      if (attempt > 1) {
+        setStatus('Retrying submission (attempt ' + attempt + ' of ' + MAX_SUBMIT_RETRIES + ')...', 'warning');
+        showProgress('Retrying...');
       }
-
-      if (!data.ok) {
-        throw new Error(data.error || 'Server rejected the data.');
-      }
-
-      return data;
-
+      const result = await postWithProgress(payload);
+      return result; // نجح - حتى لو ok:false (خطأ Validation) منعملوش Retry، السيرفر رد بوضوح
     } catch (err) {
-      lastError = err;
-      if (attempt < maxRetries) {
-        const delay = RETRY_DELAY_MS * attempt;
-        submitOverlayText.textContent = 'Retrying... (Attempt ' + (attempt + 1) + '/' + maxRetries + ')';
-        submitOverlaySub.textContent = 'Error: ' + err.message;
+      lastErr = err;
+      if (attempt < MAX_SUBMIT_RETRIES) {
+        const delay = RETRY_BASE_DELAY_MS * attempt;
+        setStatus('Network hiccup — retrying in ' + Math.round(delay / 1000) + 's... (' + attempt + '/' + MAX_SUBMIT_RETRIES + ')', 'warning');
         await new Promise(r => setTimeout(r, delay));
       }
     }
   }
-
-  throw lastError || new Error('Failed after ' + maxRetries + ' attempts.');
+  throw lastErr || new Error('Unexpected error.');
 }
 
 /* =====================================================
-   ✅ Form Submission
+   ✅ v7: حفظ/استرجاع مسودة تلقائي (LocalStorage)
+   عشان لو الصفحة اتقفلت أو الجهاز اتهنج، الداتا متتضيعش.
 ===================================================== */
+let draftSaveTimer = null;
+function scheduleDraftSave() {
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(saveDraftNow, 400);
+}
+
+function collectDraftData() {
+  return {
+    savedAt: new Date().toISOString(),
+    fields: {
+      labelerName: labelerNameInput.value,
+      userInput: userInput.value,
+      qcName: qcNameInput.value,
+      taskLink: taskLinkInput.value,
+      taskId: taskIdInput.value,
+      taskType: document.getElementById('taskType').value,
+      queueName: document.getElementById('queueName').value,
+      modality: document.getElementById('modality').value,
+      passStatus: document.getElementById('passStatus').value,
+      shift: shiftSelect.value,
+      issue: issueSelect.value,
+      edgeCaseSubIssue: edgeCaseSubIssueSelect.value,
+      edgeCaseDesc: edgeCaseDescInput.value,
+      otherSubIssue: otherSubIssueSelect.value,
+      otherReasonDesc: otherReasonDescInput.value,
+      frameStart: frameStartInput.value,
+      frameEnd: frameEndInput.value
+    },
+    screenshotBase64: screenshotBase64,
+    screenshotFileName: screenshotFileName,
+    existingScreenshotUrl: existingScreenshotUrl
+  };
+}
+
+function saveDraftNow() {
+  try {
+    const draft = collectDraftData();
+    // مفيش داعي نحفظ مسودة فاضية تماماً
+    const hasAnyContent = Object.values(draft.fields).some(v => String(v || '').trim() !== '') || draft.screenshotBase64;
+    if (hasAnyContent) {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    }
+  } catch (e) {
+    // localStorage ممكن يبقى ممتلئ أو متمنوع - مش هيوقف الفورم
+    console.warn('Could not save draft:', e);
+  }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (e) {}
+}
+
+function loadStoredDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function restoreDraft() {
+  const draft = loadStoredDraft();
+  if (!draft) { draftBanner.classList.remove('visible'); return; }
+
+  const f = draft.fields || {};
+  labelerNameInput.value = f.labelerName || '';
+  userInput.value = f.userInput || '';
+  qcNameInput.value = f.qcName || '';
+  taskLinkInput.value = f.taskLink || '';
+  taskIdInput.value = f.taskId || '';
+  if (f.taskType) document.getElementById('taskType').value = f.taskType;
+  if (f.queueName) document.getElementById('queueName').value = f.queueName;
+  if (f.modality) document.getElementById('modality').value = f.modality;
+  if (f.passStatus) document.getElementById('passStatus').value = f.passStatus;
+  if (f.shift) shiftSelect.value = f.shift;
+  if (f.issue) {
+    issueSelect.value = f.issue;
+    issueSelect.dispatchEvent(new Event('change'));
+  }
+  if (f.edgeCaseSubIssue) {
+    edgeCaseSubIssueSelect.value = f.edgeCaseSubIssue;
+    edgeCaseSubIssueSelect.dispatchEvent(new Event('change'));
+  }
+  edgeCaseDescInput.value = f.edgeCaseDesc || '';
+  if (f.otherSubIssue) {
+    otherSubIssueSelect.value = f.otherSubIssue;
+    otherSubIssueSelect.dispatchEvent(new Event('change'));
+  }
+  otherReasonDescInput.value = f.otherReasonDesc || '';
+  frameStartInput.value = f.frameStart || '';
+  frameEndInput.value = f.frameEnd || '';
+
+  if (draft.screenshotBase64) {
+    screenshotBase64 = draft.screenshotBase64;
+    screenshotFileName = draft.screenshotFileName || 'screenshot.jpg';
+    previewImage.src = screenshotBase64;
+    previewContainer.classList.add('visible');
+    screenshotMeta.textContent = "Restored size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
+  }
+  existingScreenshotUrl = draft.existingScreenshotUrl || '';
+
+  draftBanner.classList.remove('visible');
+  setStatus('Draft restored. Please review and submit again.', 'info');
+}
+
+function discardDraft() {
+  clearDraft();
+  draftBanner.classList.remove('visible');
+}
+
+// أي تغيير في حقول النص/الاختيار بيتحفظ تلقائياً كمسودة
+form.addEventListener('input', scheduleDraftSave);
+form.addEventListener('change', scheduleDraftSave);
+
+// عند فتح الصفحة: لو فيه مسودة قديمة، اعرض بانر الاسترجاع
+window.addEventListener('DOMContentLoaded', function () {
+  const draft = loadStoredDraft();
+  if (draft) {
+    draftBanner.classList.add('visible');
+  }
+});
+
+/* ---------- Submit ---------- */
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  if (isSubmitting || isUploading) {
-    setStatus('Please wait, processing in progress...', 'warning');
-    return;
-  }
-
-  // ========== 1. Validation ==========
+  // 1. Labeler Name
   const labelerVal = labelerNameInput.value.trim();
   if (labelerVal.length < 3 || /[^a-zA-Z\s]/.test(labelerVal)) { setStatus('Error: Labeler Name must be at least 3 English letters.', 'error'); return; }
   if (containsUrl(labelerVal)) { setStatus('Error: Links are not allowed in Labeler Name.', 'error'); return; }
 
+  // 2. QC Name
   const qcVal = qcNameInput.value.trim();
   if (qcVal.length < 3 || /[^a-zA-Z\s]/.test(qcVal)) { setStatus('Error: QC Name must be at least 3 English letters.', 'error'); return; }
   if (containsUrl(qcVal)) { setStatus('Error: Links are not allowed in QC Name.', 'error'); return; }
 
+  // 3. User
   const userResult = formatUser(userInput.value);
   if (!userResult.valid) { setStatus('Error: User must be 6 digits or me+6 digits.', 'error'); return; }
 
+  // 4. Task Link
   const taskLinkVal = taskLinkInput.value.trim();
-  if (!taskLinkVal.startsWith("https://labeling.robot.car/#/tasks/do/")) { setStatus('Error: Invalid Task Link.', 'error'); return; }
+  if (!taskLinkVal.startsWith("https://labeling.robot.car/#/tasks/do/")) { setStatus('Error: Invalid Task Link. Please use the correct labeling link.', 'error'); return; }
 
+  // 5. Shift
   if (!shiftSelect.value) { setStatus('Error: Please select a Shift.', 'error'); return; }
 
+  // 6. Frames
   if (issuedFramesGroup.classList.contains('visible')) {
     const start = parseInt(frameStartInput.value);
     const end = parseInt(frameEndInput.value);
@@ -1202,6 +1062,7 @@ form.addEventListener('submit', async function (e) {
     if (start < 1 || start > 199 || end < 1 || end > 199) { setStatus('Error: Frame range must be between 1 and 199.', 'error'); return; }
   }
 
+  // 7. Edge Case
   if (edgeCaseGroup.classList.contains('visible')) {
     if (!edgeCaseSubIssueSelect.value) { setStatus('Error: Please select an edge case type.', 'error'); return; }
     if (edgeCaseSubIssueSelect.value === 'Other') {
@@ -1211,24 +1072,25 @@ form.addEventListener('submit', async function (e) {
     }
   }
 
+  // 8. Other Reason
   if (otherReasonGroup.classList.contains('visible')) {
     const reasonVal = otherReasonDescInput.value.trim();
     if (!reasonVal) { setStatus('Error: Please describe the reason.', 'error'); return; }
     if (containsUrl(reasonVal)) { setStatus('Error: Links are not allowed in Description.', 'error'); return; }
   }
 
+  // 9. Other sub-selection
   if (issueSelect.value === 'Other' && !otherSubIssueSelect.value) { setStatus('Error: Please select a specific type for Other.', 'error'); return; }
 
-  // ✅ Screenshot Required Check
-  if (!screenshotUrl) {
-    setStatus('Error: Screenshot is required. Please upload or capture a screenshot first.', 'error');
+  // ✅ 10. v7: Screenshot is now REQUIRED
+  if (!screenshotBase64 && !existingScreenshotUrl) {
+    screenshotSection.classList.add('required-empty');
+    setStatus('Error: A screenshot is required. Please upload or capture one before submitting.', 'error');
     screenshotSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    screenshotSection.style.borderColor = '#ff6b6b';
-    setTimeout(() => { screenshotSection.style.borderColor = ''; }, 3000);
     return;
   }
 
-  // ========== 2. Prepare Data ==========
+  // ---------- Data Preparation ----------
   const formData = new FormData(form);
   const finalLabelerName = formatNameCase(labelerVal);
   const finalQcName = formatNameCase(qcVal);
@@ -1253,11 +1115,7 @@ form.addEventListener('submit', async function (e) {
     finalFrames = "from frame " + frameStartInput.value + " to frame " + frameEndInput.value;
   }
 
-  const idempotencyKey = generateIdempotencyKey();
-
   const data = {
-    action: "submitForm",
-    idempotencyKey: idempotencyKey,
     timestamp: formData.get('timestamp'),
     labelerName: finalLabelerName,
     user: finalUser,
@@ -1272,38 +1130,50 @@ form.addEventListener('submit', async function (e) {
     issuedFrames: finalFrames,
     edgeCaseDesc: edgeCaseDescInput.value.trim() || "",
     shift: formData.get('shift'),
-    screenshotUrl: screenshotUrl
+    // ✅ لو عندنا رابط صورة اترفع فعلاً في محاولة سابقة، ابعته بس، من غير ما نرفع تاني
+    screenshotData: existingScreenshotUrl ? "" : (screenshotBase64 || ""),
+    screenshotName: existingScreenshotUrl ? "" : (screenshotFileName || ""),
+    existingScreenshotUrl: existingScreenshotUrl || ""
   };
 
-  // ========== 3. Submit with Retry ==========
-  isSubmitting = true;
   submitBtn.disabled = true;
-  showOverlay('Submitting Data...', 'Attempt 1/' + MAX_RETRIES);
-  setStatus('', '');
+  showProgress(existingScreenshotUrl ? 'Submitting...' : 'Uploading screenshot...');
+  setStatus('Submitting...', 'info');
 
   try {
-    const result = await postJSONWithRetry(data);
+    const result = await submitWithRetry(data);
 
-    if (result.ok) {
-      // ✅ Success
-      hideOverlay();
-      showModal(getGulpMessage());
-      form.reset();
-      removeScreenshot();
-      clearSavedData();
-      setTimestamp();
-      hideAllDynamicGroups();
+    if (!result || !result.ok) {
+      // خطأ واضح من السيرفر (Validation / Upload / Write) - الداتا فاضلة زي ما هي
+      const err = (result && result.error) ? result.error : 'Server rejected the data.';
+      // ✅ لو السيرفر رفع الصورة بنجاح بس فشل بس في الكتابة، خزّن الرابط عشان الـ Retry الجاي
+      // ميرفعش نفس الصورة تاني.
+      if (result && result.screenshotUrl) {
+        existingScreenshotUrl = result.screenshotUrl;
+      }
+      throw new Error(err);
+    }
+
+    // ✅ نجاح (سواء اتكتب فوراً أو اتحفظ في الـ Queue وهيتكتب تلقائياً خلال دقايق)
+    hideProgress();
+    if (result.queued) {
+      setStatus('✅ Received — server was busy, your data is safely queued and will be saved automatically.', 'success');
+    } else {
       setStatus('', '');
     }
+    showModal(getGulpMessage());
+    form.reset();
+    removeScreenshot();
+    screenshotSection.classList.remove('required-empty');
+    existingScreenshotUrl = "";
+    setTimestamp();
+    hideAllDynamicGroups();
+    clearDraft(); // الداتا اتحفظت بأمان على السيرفر (أو في الـ Queue) - المسودة المحلية بقت مش لازمة
   } catch (err) {
-    // ✅ Failure - Keep Data
-    hideOverlay();
-    setStatus('Failed ❌: ' + (err.message || 'Unexpected error.'), 'error');
-    // ✅ الداتا محفوظة في localStorage ومش هتضيع
-    saveFormData();
-    setStatus('Failed ❌: ' + err.message + ' — Your data is saved locally. Please try again.', 'error');
+    hideProgress();
+    setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — your data is still here, just tap Submit again.', 'error');
+    saveDraftNow(); // ✅ نضمن إن آخر نسخة من الداتا محفوظة محلياً كمان
   } finally {
-    isSubmitting = false;
     submitBtn.disabled = false;
   }
 });
