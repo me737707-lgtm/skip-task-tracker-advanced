@@ -208,6 +208,21 @@ label span { color: #ff6b6b; }
 .pending-banner-buttons button { width: auto; margin: 0; padding: 8px 14px; font-size: 0.85rem; }
 .btn-retry-now { background: #4dabf7; color: #000; }
 
+/* ✅ v7.2: Connection diagnostic banner */
+.conn-banner {
+  display: none;
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.6);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #ffc9c9;
+  line-height: 1.5;
+}
+.conn-banner.visible { display: block; }
+.conn-banner strong { color: #ff8787; }
+
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
   h1 { font-size: 1.5rem; }
@@ -247,11 +262,15 @@ label span { color: #ff6b6b; }
 .btn-close { background: #ff6b6b; color: #fff; }
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div class="container">
   <h1>Skip Task Tracker</h1>
   <p class="prayer-text">❤️ ادعوا لأخونا علي ويكا بالرحمة والمغفرة ❤️</p>
+
+  <!-- ✅ v7.2: Connection diagnostic banner -->
+  <div class="conn-banner" id="connBanner"></div>
 
   <div class="draft-banner" id="draftBanner">
     <span>💾 We found an unsent submission you started earlier. Restore it?</span>
@@ -460,16 +479,17 @@ const INJECTED_URL = "<?= apiUrl ?>";
 const MANUAL_URL = "https://script.google.com/macros/s/AKfycbzc8Q0OmppTYIpjAbm4WtpUkfiLTzJpCsHsxw7058oUDlbVqVlY7NjJ7zV3qY6jWUVY/exec";
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
-/* ✅ v7: إعدادات الـ Retry / Compression / Draft */
-const MAX_SUBMIT_RETRIES = 3;            // عدد محاولات إعادة الإرسال التلقائية عند فشل الشبكة
-const RETRY_BASE_DELAY_MS = 1500;        // Backoff بين المحاولات
-const SUBMIT_TIMEOUT_MS = 90000;         // مهلة كل محاولة
-const IMAGE_MAX_DIMENSION = 1600;        // أقصى عرض/ارتفاع بعد الضغط
-const IMAGE_JPEG_QUALITY = 0.72;         // جودة الضغط (كل ما قلّت، السرعة زادت)
+/* ✅ v7.2: إعدادات الـ Retry / Compression / Draft */
+const MAX_SUBMIT_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1500;
+const SUBMIT_TIMEOUT_MS = 90000;
+const IMAGE_MAX_DIMENSION = 1600;
+const IMAGE_JPEG_QUALITY = 0.72;
 const DRAFT_STORAGE_KEY = "skipTaskTracker_draft_v7";
-const FAILED_QUEUE_KEY = "skipTaskTracker_failedQueue_v7";   // ✅ v7.1: صف دائم للسبميشنز اللي معتنجحش توصل للسيرفر خالص
-const BACKGROUND_RETRY_INTERVAL_MS = 25000;                  // كل قد إيه نحاول نبعت اللي متعلق تاني في الخلفية
-let currentPendingId = null;                                 // لو السبميشن الحالي المعروض في الفورم اتخزن في الـ Queue
+const FAILED_QUEUE_KEY = "skipTaskTracker_failedQueue_v7";
+const BACKGROUND_RETRY_INTERVAL_MS = 25000;
+const PING_TIMEOUT_MS = 15000;
+let currentPendingId = null;
 
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
@@ -497,6 +517,7 @@ const customModal = document.getElementById('customModal');
 const modalMessage = document.getElementById('modalMessage');
 const screenshotSection = document.getElementById('screenshotSection');
 const draftBanner = document.getElementById('draftBanner');
+const connBanner = document.getElementById('connBanner');
 
 // Progress bar elements
 const progressWrap = document.getElementById('progressWrap');
@@ -508,9 +529,77 @@ const progressPhaseLabel = document.getElementById('progressPhaseLabel');
 const previewContainer = document.getElementById('previewContainer');
 const previewImage = document.getElementById('previewImage');
 const screenshotMeta = document.getElementById('screenshotMeta');
-let screenshotBase64 = "";       // النسخة المضغوطة الجاهزة للإرسال
+let screenshotBase64 = "";
 let screenshotFileName = "";
-let existingScreenshotUrl = "";  // ✅ لو صورة اترفعت فعلاً في محاولة سابقة فاشلة، منرفعهاش تاني
+let existingScreenshotUrl = "";
+
+/* =====================================================
+   ✅ v7.2: Connection Diagnostics
+   بيعمل ping للسيرفر وبيحدد بالظبط المشكلة فين:
+   - ping شغال → الاتصال تمام
+   - ping بيرجع صفحة login → Deployment مش "Anyone"
+   - ping مش بيرد خالص → نت / ad-blocker / iframe third-party cookies
+===================================================== */
+function showConnBanner(html) {
+  connBanner.innerHTML = html;
+  connBanner.classList.add('visible');
+}
+function hideConnBanner() {
+  connBanner.classList.remove('visible');
+}
+
+async function checkServerConnection() {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, PING_TIMEOUT_MS);
+    const res = await fetch(API_URL + '?action=ping', { method: 'GET', redirect: 'follow', signal: controller.signal });
+    clearTimeout(timer);
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (e) { data = null; }
+
+    if (data && data.ok) {
+      hideConnBanner();
+      return { ok: true };
+    }
+    // رد بس مش JSON صالح (غالباً صفحة login)
+    const lower = text.toLowerCase();
+    if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('sign in') !== -1) {
+      return {
+        ok: false,
+        reason: 'not_public',
+        message: '⚠️ <strong>إعدادات الـ Deployment غلط.</strong> الـ Web App مش متاح للكل. الأدمن لازم يعمل Deploy جديد بخيار <strong>"Who has access: Anyone"</strong> (مش "Anyone with Google account") ويرسل الرابط الجديد.'
+      };
+    }
+    return {
+      ok: false,
+      reason: 'unexpected',
+      message: '⚠️ السيرفر رد رد غير متوقع. تأكد من إن الرابط صحيح وإن الـ deployment مش محذوف.'
+    };
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      return {
+        ok: false,
+        reason: 'timeout',
+        message: '⚠️ السيرفر مش بيرد (مهلة الاتصال خلصت). ممكن يكون النت ضعيف أو السيرفر مقفل مؤقتاً. الداتا هتتبعت تلقائياً لما الاتصال يرجع.'
+      };
+    }
+    // XHR/fetch اتعمله block - غالباً CORS بسبب access settings، أو ad-blocker، أو third-party cookies لو الفورم جوه iframe
+    return {
+      ok: false,
+      reason: 'blocked',
+      message: '⚠️ <strong>المتصفح مش قادر يوصل للسيرفر.</strong> أشهر الأسباب: (1) الـ Deployment مش "Anyone" — الأدمن يعيد الـ Deploy، (2) Ad-blocker — يقفله، (3) الفورم مفتوح جوه موقع تاني وthird-party cookies متقفلة — يفتح الرابط مباشرة في تاب جديدة.'
+    };
+  }
+}
+
+async function diagnoseAndNotify() {
+  const result = await checkServerConnection();
+  if (!result.ok && result.message) {
+    showConnBanner(result.message);
+  }
+  return result;
+}
 
 /* ---------- Timestamp ---------- */
 function setTimestamp() {
@@ -597,12 +686,10 @@ taskLinkInput.addEventListener('input', function () {
 });
 
 /* =====================================================
-   ✅ v7: ضغط الصورة قبل الإرسال (Resize + JPEG)
-   بيقلل حجم الصورة بشكل كبير عشان الرفع يبقى أسرع بكتير
-   وأقل عرضة للفشل تحت ضغط أو نت ضعيف.
+   ✅ ضغط الصورة قبل الإرسال (Resize + JPEG)
 ===================================================== */
 function compressImage(dataUrl) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function (resolve, reject) {
     const img = new Image();
     img.onload = function () {
       let w = img.width;
@@ -677,7 +764,7 @@ async function processFile(file) {
 }
 
 async function applyCompressedScreenshot(rawDataUrl, fileName) {
-  existingScreenshotUrl = ""; // أي صورة جديدة بتلغي أي رابط قديم محفوظ من Retry سابق
+  existingScreenshotUrl = "";
   setStatus('Optimizing image...', 'info');
   try {
     const compressed = await compressImage(rawDataUrl);
@@ -689,7 +776,7 @@ async function applyCompressedScreenshot(rawDataUrl, fileName) {
     screenshotMeta.textContent = "Optimized size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
     setStatus('', '');
   } catch (err) {
-    // لو الضغط فشل لأي سبب، استخدم الصورة الأصلية بدل ما نمنع اليوزر من الإرسال
+    // لو الضغط فشل، استخدم الصورة الأصلية
     screenshotBase64 = rawDataUrl;
     screenshotFileName = fileName;
     previewImage.src = screenshotBase64;
@@ -766,7 +853,7 @@ function removeScreenshot() {
 function formatNameCase(str) {
   if (!str) return "";
   str = str.toLowerCase();
-  return str.replace(/\b\w/g, char => char.toUpperCase());
+  return str.replace(/\b\w/g, function (char) { return char.toUpperCase(); });
 }
 
 function formatUser(rawUser) {
@@ -826,13 +913,13 @@ function showModal(message) {
 function closeModal() { customModal.style.display = 'none'; }
 function copyModalMessage() {
   const text = modalMessage.innerText;
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(text).then(function () {
     const btn = document.querySelector('.btn-copy');
     const originalText = btn.innerText;
     btn.innerText = "Copied!";
     btn.style.background = "#4dabf7";
-    setTimeout(() => { btn.innerText = originalText; btn.style.background = "#69db7c"; }, 1500);
-  }).catch(() => { alert("Failed to copy text."); });
+    setTimeout(function () { btn.innerText = originalText; btn.style.background = "#69db7c"; }, 1500);
+  }).catch(function () { alert("Failed to copy text."); });
 }
 
 function getGulpMessage() {
@@ -849,11 +936,10 @@ function getGulpMessage() {
 }
 
 /* =====================================================
-   ✅ v7: إرسال عن طريق XMLHttpRequest (بدل fetch) عشان
-   نقدر نتابع تقدّم الرفع (upload.onprogress) ونعرضه في الـ Progress Bar.
+   ✅ الإرسال عن طريق XMLHttpRequest (عشان نتابع تقدّم الرفع)
 ===================================================== */
 function postWithProgress(payload) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function (resolve, reject) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', API_URL, true);
     xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
@@ -861,7 +947,6 @@ function postWithProgress(payload) {
 
     xhr.upload.onprogress = function (evt) {
       if (evt.lengthComputable) {
-        // نحجز آخر 5% لوقت معالجة السيرفر (رفع الصورة على Drive + الكتابة في الشيت)
         setProgress((evt.loaded / evt.total) * 95);
       }
     };
@@ -879,13 +964,13 @@ function postWithProgress(payload) {
         const text = xhr.responseText || '';
         const lower = text.toLowerCase();
         if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
-          reject({ networkLevel: true, message: 'This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone".' });
+          reject({ networkLevel: true, reason: 'not_public', message: 'This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone".' });
         } else if (xhr.status === 404) {
-          reject({ networkLevel: true, message: 'The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link.' });
+          reject({ networkLevel: true, reason: 'not_found', message: 'The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link.' });
         } else if (xhr.status >= 500) {
-          reject({ networkLevel: true, message: 'The script crashed before responding (Error ' + xhr.status + '). Admin: check Executions log.' });
+          reject({ networkLevel: true, reason: 'server_error', message: 'The script crashed before responding (Error ' + xhr.status + '). Admin: check Executions log.' });
         } else {
-          reject({ networkLevel: true, message: 'Server returned a page instead of data. Verify deployment settings.' });
+          reject({ networkLevel: true, reason: 'unexpected', message: 'Server returned a page instead of data. Verify deployment settings.' });
         }
         return;
       }
@@ -893,18 +978,17 @@ function postWithProgress(payload) {
     };
 
     xhr.onerror = function () {
-      reject({ networkLevel: true, message: 'Cannot connect to the server. Check your internet connection.' });
+      reject({ networkLevel: true, reason: 'network', message: 'Cannot connect to the server. Check your internet connection, disable ad-blockers, or open the form directly (not inside another site).' });
     };
     xhr.ontimeout = function () {
-      reject({ networkLevel: true, message: 'Server took too long to respond.' });
+      reject({ networkLevel: true, reason: 'timeout', message: 'Server took too long to respond. It might be very busy — your data is saved on this device and will retry automatically.' });
     };
 
     xhr.send(JSON.stringify(payload));
   });
 }
 
-/* ✅ v7: إعادة المحاولة التلقائية - بس على أخطاء الشبكة/السيرفر،
-   مش على أخطاء التحقق (Validation) اللي محتاجة تدخل من اليوزر */
+/* ✅ إعادة المحاولة التلقائية - بس على أخطاء الشبكة/السيرفر */
 async function submitWithRetry(payload) {
   let lastErr = null;
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
@@ -914,7 +998,7 @@ async function submitWithRetry(payload) {
         showProgress('Retrying...');
       }
       const result = await postWithProgress(payload);
-      return result; // نجح - حتى لو ok:false (خطأ Validation) منعملوش Retry، السيرفر رد بوضوح
+      return result;
     } catch (err) {
       lastErr = err;
       if (attempt < MAX_SUBMIT_RETRIES) {
@@ -928,8 +1012,7 @@ async function submitWithRetry(payload) {
 }
 
 /* =====================================================
-   ✅ v7: حفظ/استرجاع مسودة تلقائي (LocalStorage)
-   عشان لو الصفحة اتقفلت أو الجهاز اتهنج، الداتا متتضيعش.
+   ✅ حفظ/استرجاع مسودة تلقائي (LocalStorage)
 ===================================================== */
 let draftSaveTimer = null;
 function scheduleDraftSave() {
@@ -968,13 +1051,11 @@ function collectDraftData() {
 function saveDraftNow() {
   try {
     const draft = collectDraftData();
-    // مفيش داعي نحفظ مسودة فاضية تماماً
     const hasAnyContent = Object.values(draft.fields).some(v => String(v || '').trim() !== '') || draft.screenshotBase64;
     if (hasAnyContent) {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
   } catch (e) {
-    // localStorage ممكن يبقى ممتلئ أو متمنوع - مش هيوقف الفورم
     console.warn('Could not save draft:', e);
   }
 }
@@ -1044,15 +1125,12 @@ function discardDraft() {
 }
 
 /* =====================================================
-   ✅ v7.1: Persistent Failed-Submission Queue
+   ✅ Persistent Failed-Submission Queue (v7.1 + v7.2 enhancements)
    =====================================================
-   الفرق بين ده وبين الـ Draft:
-   - الـ Draft بيتمسح بمجرد ما اليوزر يعمل submit ناجح.
-   - الـ Failed Queue ده نسخة كاملة من أي submission اتعمله-ا submit
-     فعلاً بس فشلت توصل للسيرفر (مشكلة نت/اتصال حقيقية، أو السيرفر رفض
-     بسبب ضغط/رفع صورة)، وبيفضل محفوظ في localStorage وبيتبعت تاني
-     تلقائياً في الخلفية (كل ما النت يرجع، أو كل 25 ثانية) لحد ما ينجح،
-     حتى لو اليوزر قفل التاب أو غيّر الفورم وبدأ سبميشن جديد.
+   - الـ Draft بيتمسح بعد submit ناجح
+   - الـ Failed Queue: نسخة كاملة من أي submission فشلت توصل للسيرفر
+     (نت/اتصال)، بتفضل في localStorage وبيتبعت تلقائياً في الخلفية
+     لحد ما ينجح، حتى لو قفل التاب.
 ===================================================== */
 function loadFailedQueue() {
   try {
@@ -1094,9 +1172,6 @@ function renderPendingBanner() {
 }
 
 let flushInProgress = false;
-/* بتحاول تبعت كل عنصر متعلق مرة واحدة (مش الـ Retry chain الكامل) عشان منعلقش الواجهة.
-   لو نجح عنصر وكان هو نفسه اللي ظاهر في الفورم دلوقتي (currentPendingId)، بنمسح الفورم
-   ونوريه إشعار إن الداتا اتحفظت، حتى لو مضغطش Submit تاني. */
 async function attemptFlushFailedQueue(isBackgroundAttempt) {
   if (flushInProgress) return;
   const queue = loadFailedQueue();
@@ -1133,7 +1208,6 @@ async function attemptFlushFailedQueue(isBackgroundAttempt) {
         const q2 = loadFailedQueue().map(q => q.id === item.id ? item : q);
         saveFailedQueue(q2);
       }
-      // لو result.ok كان false بدون سبب مؤقت (نادر) بنسيبها في الطابور، هتتحاول تاني بعدين
     } catch (err) {
       // لسه فاشل (شبكة) - تفضل في الطابور، هتتحاول تاني في المحاولة الجاية
     }
@@ -1141,22 +1215,27 @@ async function attemptFlushFailedQueue(isBackgroundAttempt) {
   flushInProgress = false;
 }
 
-// أي تغيير في حقول النص/الاختيار بيتحفظ تلقائياً كمسودة
+// أي تغيير في الحقول بيتحفظ تلقائياً كمسودة
 form.addEventListener('input', scheduleDraftSave);
 form.addEventListener('change', scheduleDraftSave);
 
-// ✅ v7.1: حاول تبعت أي submissions متعلقة كل ما النت يرجع، وكل فترة ثابتة في الخلفية
-window.addEventListener('online', function () { attemptFlushFailedQueue(true); });
+// ✅ حاول تبعت أي submissions متعلقة كل ما النت يرجع، وكل فترة في الخلفية
+window.addEventListener('online', function () {
+  attemptFlushFailedQueue(true);
+  // ✅ v7.2: لما النت يرجع، اتأكد إن السيرفر وصل تاني وشيل الـ banner لو سليم
+  diagnoseAndNotify();
+});
 setInterval(function () { attemptFlushFailedQueue(true); }, BACKGROUND_RETRY_INTERVAL_MS);
 
-// عند فتح الصفحة: لو فيه مسودة قديمة اعرض بانر الاسترجاع، ولو فيه submissions
-// متعلقة من قبل حاول تبعتها فوراً واعرض عددها
-window.addEventListener('DOMContentLoaded', function () {
+// ✅ v7.2: فحص الاتصال أول ما الصفحة تفتح - يكشف مشاكل الـ Deployment فوراً
+window.addEventListener('DOMContentLoaded', async function () {
   const draft = loadStoredDraft();
   if (draft) {
     draftBanner.classList.add('visible');
   }
   renderPendingBanner();
+  // فحص الاتصال (من غير ما نعلق فتح الصفحة)
+  diagnoseAndNotify();
   attemptFlushFailedQueue(true);
 });
 
@@ -1213,7 +1292,7 @@ form.addEventListener('submit', async function (e) {
   // 9. Other sub-selection
   if (issueSelect.value === 'Other' && !otherSubIssueSelect.value) { setStatus('Error: Please select a specific type for Other.', 'error'); return; }
 
-  // ✅ 10. v7: Screenshot is now REQUIRED
+  // 10. Screenshot is REQUIRED
   if (!screenshotBase64 && !existingScreenshotUrl) {
     screenshotSection.classList.add('required-empty');
     setStatus('Error: A screenshot is required. Please upload or capture one before submitting.', 'error');
@@ -1261,7 +1340,6 @@ form.addEventListener('submit', async function (e) {
     issuedFrames: finalFrames,
     edgeCaseDesc: edgeCaseDescInput.value.trim() || "",
     shift: formData.get('shift'),
-    // ✅ لو عندنا رابط صورة اترفع فعلاً في محاولة سابقة، ابعته بس، من غير ما نرفع تاني
     screenshotData: existingScreenshotUrl ? "" : (screenshotBase64 || ""),
     screenshotName: existingScreenshotUrl ? "" : (screenshotFileName || ""),
     existingScreenshotUrl: existingScreenshotUrl || ""
@@ -1275,10 +1353,7 @@ form.addEventListener('submit', async function (e) {
     const result = await submitWithRetry(data);
 
     if (!result || !result.ok) {
-      // خطأ واضح من السيرفر (Validation / Upload / Write) - الداتا فاضلة زي ما هي
       const err = (result && result.error) ? result.error : 'Server rejected the data.';
-      // ✅ لو السيرفر رفع الصورة بنجاح بس فشل بس في الكتابة، خزّن الرابط عشان الـ Retry الجاي
-      // ميرفعش نفس الصورة تاني.
       if (result && result.screenshotUrl) {
         existingScreenshotUrl = result.screenshotUrl;
         data.existingScreenshotUrl = result.screenshotUrl;
@@ -1290,14 +1365,13 @@ form.addEventListener('submit', async function (e) {
       throw wrapped;
     }
 
-    // ✅ نجاح (سواء اتكتب فوراً أو اتحفظ في الـ Queue وهيتكتب تلقائياً خلال دقايق)
-    // لو كان فيه نسخة من نفس السبميشن ده محفوظة في الـ Failed Queue من محاولة قبل كده، امسحها
-    // عشان منبعتش نفس الداتا مرتين لما الـ Background Retry يشتغل.
+    // نجاح (سواء اتكتب فوراً أو اتحفظ في الـ Queue)
     if (currentPendingId) {
       removeFromFailedQueue(currentPendingId);
       currentPendingId = null;
     }
     hideProgress();
+    hideConnBanner();
     if (result.queued) {
       setStatus('✅ Received — server was busy, your data is safely queued and will be saved automatically.', 'success');
     } else {
@@ -1310,21 +1384,29 @@ form.addEventListener('submit', async function (e) {
     existingScreenshotUrl = "";
     setTimestamp();
     hideAllDynamicGroups();
-    clearDraft(); // الداتا اتحفظت بأمان على السيرفر (أو في الـ Queue) - المسودة المحلية بقت مش لازمة
+    clearDraft();
   } catch (err) {
     hideProgress();
-    saveDraftNow(); // ✅ نضمن إن آخر نسخة من الداتا محفوظة محلياً كمان (الفورم نفسه فاضل زي ما هو)
+    saveDraftNow();
 
     if (err.stage === 'validation') {
-      // خطأ محتاج تدخل من اليوزر (مثلاً الصورة أكبر من 5MB) - مفيش فايدة نعمله Retry تلقائي
       setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — please fix this and submit again.', 'error');
     } else {
-      // ✅ مشكلة اتصال/سيرفر مؤقتة: خزّن نسخة كاملة من الداتا في طابور دائم
-      // هيحاول يبعتها تلقائياً في الخلفية لحد ما تنجح - حتى لو قفلت التاب.
+      // ✅ مشكلة اتصال/سيرفر مؤقتة: خزّن نسخة كاملة في طابور دائم
       if (!currentPendingId) {
         currentPendingId = enqueueFailedSubmission(data);
       }
-      setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — your data is still here AND saved on this device; it will keep retrying automatically in the background. You can also tap Submit again.', 'error');
+      // ✅ v7.2: شخّص المشكلة بالظبط واعرض سبب محتمل واضح
+      let hint = '';
+      if (err.reason === 'not_public') {
+        hint = ' (سبب محتمل: الـ Deployment مش "Anyone" — الأدمن يعيد الـ Deploy)';
+        showConnBanner('⚠️ <strong>الـ Deployment مش متاح للكل.</strong> الأدمن لازم يعمل Deploy جديد بخيار "Who has access: Anyone" ويرسل الرابط الجديد.');
+      } else if (err.reason === 'timeout') {
+        hint = ' (السيرفر مزحوم — الداتا هتتبعت تلقائياً لاحقاً)';
+      } else if (err.reason === 'network' || err.reason === 'blocked') {
+        hint = ' (تأكد من النت / اقفل ad-blocker / افتح الفورم في تاب مباشرة مش جوه موقع تاني)';
+      }
+      setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + hint + ' — your data is still here AND saved on this device; it will keep retrying automatically in the background. You can also tap Submit again.', 'error');
     }
   } finally {
     submitBtn.disabled = false;
