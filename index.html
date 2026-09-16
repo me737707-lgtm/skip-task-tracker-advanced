@@ -192,6 +192,22 @@ label span { color: #ff6b6b; }
 .btn-restore { background: #ffd43b; color: #000; }
 .btn-discard { background: rgba(255,255,255,0.15); color: #fff; }
 
+/* Pending (failed-to-send) submissions banner */
+.pending-banner {
+  display: none;
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #ffb3b3;
+}
+.pending-banner.visible { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pending-banner-buttons { display: flex; gap: 8px; }
+.pending-banner-buttons button { width: auto; margin: 0; padding: 8px 14px; font-size: 0.85rem; }
+.btn-retry-now { background: #4dabf7; color: #000; }
+
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
   h1 { font-size: 1.5rem; }
@@ -242,6 +258,13 @@ label span { color: #ff6b6b; }
     <div class="draft-banner-buttons">
       <button type="button" class="btn-restore" onclick="restoreDraft()">Restore</button>
       <button type="button" class="btn-discard" onclick="discardDraft()">Discard</button>
+    </div>
+  </div>
+
+  <div class="pending-banner" id="pendingBanner">
+    <span id="pendingBannerText">⚠️ 0 submission(s) could not reach the server yet. They are saved on this device and will be sent automatically.</span>
+    <div class="pending-banner-buttons">
+      <button type="button" class="btn-retry-now" onclick="attemptFlushFailedQueue(false)">Retry Now</button>
     </div>
   </div>
 
@@ -444,6 +467,9 @@ const SUBMIT_TIMEOUT_MS = 90000;         // مهلة كل محاولة
 const IMAGE_MAX_DIMENSION = 1600;        // أقصى عرض/ارتفاع بعد الضغط
 const IMAGE_JPEG_QUALITY = 0.72;         // جودة الضغط (كل ما قلّت، السرعة زادت)
 const DRAFT_STORAGE_KEY = "skipTaskTracker_draft_v7";
+const FAILED_QUEUE_KEY = "skipTaskTracker_failedQueue_v7";   // ✅ v7.1: صف دائم للسبميشنز اللي معتنجحش توصل للسيرفر خالص
+const BACKGROUND_RETRY_INTERVAL_MS = 25000;                  // كل قد إيه نحاول نبعت اللي متعلق تاني في الخلفية
+let currentPendingId = null;                                 // لو السبميشن الحالي المعروض في الفورم اتخزن في الـ Queue
 
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
@@ -1017,16 +1043,121 @@ function discardDraft() {
   draftBanner.classList.remove('visible');
 }
 
+/* =====================================================
+   ✅ v7.1: Persistent Failed-Submission Queue
+   =====================================================
+   الفرق بين ده وبين الـ Draft:
+   - الـ Draft بيتمسح بمجرد ما اليوزر يعمل submit ناجح.
+   - الـ Failed Queue ده نسخة كاملة من أي submission اتعمله-ا submit
+     فعلاً بس فشلت توصل للسيرفر (مشكلة نت/اتصال حقيقية، أو السيرفر رفض
+     بسبب ضغط/رفع صورة)، وبيفضل محفوظ في localStorage وبيتبعت تاني
+     تلقائياً في الخلفية (كل ما النت يرجع، أو كل 25 ثانية) لحد ما ينجح،
+     حتى لو اليوزر قفل التاب أو غيّر الفورم وبدأ سبميشن جديد.
+===================================================== */
+function loadFailedQueue() {
+  try {
+    const raw = localStorage.getItem(FAILED_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function saveFailedQueue(arr) {
+  try { localStorage.setItem(FAILED_QUEUE_KEY, JSON.stringify(arr)); }
+  catch (e) { console.warn('Could not persist failed-submission queue:', e); }
+}
+
+function enqueueFailedSubmission(payload) {
+  const queue = loadFailedQueue();
+  const id = 'sub_' + new Date().getTime() + '_' + Math.floor(Math.random() * 1000000);
+  queue.push({ id: id, payload: payload, createdAt: new Date().toISOString(), attempts: 0 });
+  saveFailedQueue(queue);
+  renderPendingBanner();
+  return id;
+}
+
+function removeFromFailedQueue(id) {
+  const queue = loadFailedQueue().filter(item => item.id !== id);
+  saveFailedQueue(queue);
+  renderPendingBanner();
+}
+
+function renderPendingBanner() {
+  const queue = loadFailedQueue();
+  const banner = document.getElementById('pendingBanner');
+  const text = document.getElementById('pendingBannerText');
+  if (queue.length > 0) {
+    text.textContent = '⚠️ ' + queue.length + ' submission(s) could not reach the server yet. They are saved on this device and will be sent automatically.';
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+let flushInProgress = false;
+/* بتحاول تبعت كل عنصر متعلق مرة واحدة (مش الـ Retry chain الكامل) عشان منعلقش الواجهة.
+   لو نجح عنصر وكان هو نفسه اللي ظاهر في الفورم دلوقتي (currentPendingId)، بنمسح الفورم
+   ونوريه إشعار إن الداتا اتحفظت، حتى لو مضغطش Submit تاني. */
+async function attemptFlushFailedQueue(isBackgroundAttempt) {
+  if (flushInProgress) return;
+  const queue = loadFailedQueue();
+  if (queue.length === 0) return;
+
+  flushInProgress = true;
+  if (!isBackgroundAttempt) {
+    setStatus('Retrying ' + queue.length + ' saved submission(s)...', 'info');
+  }
+
+  for (const item of queue) {
+    try {
+      const result = await postWithProgress(item.payload);
+      if (result && result.ok) {
+        removeFromFailedQueue(item.id);
+        if (item.id === currentPendingId) {
+          currentPendingId = null;
+          form.reset();
+          removeScreenshot();
+          screenshotSection.classList.remove('required-empty');
+          existingScreenshotUrl = "";
+          setTimestamp();
+          hideAllDynamicGroups();
+          clearDraft();
+          setStatus('✅ Your earlier submission just went through successfully.', 'success');
+        } else if (!isBackgroundAttempt) {
+          setStatus('✅ A saved submission was delivered successfully.', 'success');
+        }
+      } else if (result && result.screenshotUrl) {
+        // فشل بس رفع الصورة نجح - حدّث الـ payload المخزّن عشان مايرفعهاش تاني
+        item.payload.existingScreenshotUrl = result.screenshotUrl;
+        item.payload.screenshotData = "";
+        item.payload.screenshotName = "";
+        const q2 = loadFailedQueue().map(q => q.id === item.id ? item : q);
+        saveFailedQueue(q2);
+      }
+      // لو result.ok كان false بدون سبب مؤقت (نادر) بنسيبها في الطابور، هتتحاول تاني بعدين
+    } catch (err) {
+      // لسه فاشل (شبكة) - تفضل في الطابور، هتتحاول تاني في المحاولة الجاية
+    }
+  }
+  flushInProgress = false;
+}
+
 // أي تغيير في حقول النص/الاختيار بيتحفظ تلقائياً كمسودة
 form.addEventListener('input', scheduleDraftSave);
 form.addEventListener('change', scheduleDraftSave);
 
-// عند فتح الصفحة: لو فيه مسودة قديمة، اعرض بانر الاسترجاع
+// ✅ v7.1: حاول تبعت أي submissions متعلقة كل ما النت يرجع، وكل فترة ثابتة في الخلفية
+window.addEventListener('online', function () { attemptFlushFailedQueue(true); });
+setInterval(function () { attemptFlushFailedQueue(true); }, BACKGROUND_RETRY_INTERVAL_MS);
+
+// عند فتح الصفحة: لو فيه مسودة قديمة اعرض بانر الاسترجاع، ولو فيه submissions
+// متعلقة من قبل حاول تبعتها فوراً واعرض عددها
 window.addEventListener('DOMContentLoaded', function () {
   const draft = loadStoredDraft();
   if (draft) {
     draftBanner.classList.add('visible');
   }
+  renderPendingBanner();
+  attemptFlushFailedQueue(true);
 });
 
 /* ---------- Submit ---------- */
@@ -1150,11 +1281,22 @@ form.addEventListener('submit', async function (e) {
       // ميرفعش نفس الصورة تاني.
       if (result && result.screenshotUrl) {
         existingScreenshotUrl = result.screenshotUrl;
+        data.existingScreenshotUrl = result.screenshotUrl;
+        data.screenshotData = "";
+        data.screenshotName = "";
       }
-      throw new Error(err);
+      const wrapped = new Error(err);
+      wrapped.stage = (result && result.stage) || 'server';
+      throw wrapped;
     }
 
     // ✅ نجاح (سواء اتكتب فوراً أو اتحفظ في الـ Queue وهيتكتب تلقائياً خلال دقايق)
+    // لو كان فيه نسخة من نفس السبميشن ده محفوظة في الـ Failed Queue من محاولة قبل كده، امسحها
+    // عشان منبعتش نفس الداتا مرتين لما الـ Background Retry يشتغل.
+    if (currentPendingId) {
+      removeFromFailedQueue(currentPendingId);
+      currentPendingId = null;
+    }
     hideProgress();
     if (result.queued) {
       setStatus('✅ Received — server was busy, your data is safely queued and will be saved automatically.', 'success');
@@ -1171,8 +1313,19 @@ form.addEventListener('submit', async function (e) {
     clearDraft(); // الداتا اتحفظت بأمان على السيرفر (أو في الـ Queue) - المسودة المحلية بقت مش لازمة
   } catch (err) {
     hideProgress();
-    setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — your data is still here, just tap Submit again.', 'error');
-    saveDraftNow(); // ✅ نضمن إن آخر نسخة من الداتا محفوظة محلياً كمان
+    saveDraftNow(); // ✅ نضمن إن آخر نسخة من الداتا محفوظة محلياً كمان (الفورم نفسه فاضل زي ما هو)
+
+    if (err.stage === 'validation') {
+      // خطأ محتاج تدخل من اليوزر (مثلاً الصورة أكبر من 5MB) - مفيش فايدة نعمله Retry تلقائي
+      setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — please fix this and submit again.', 'error');
+    } else {
+      // ✅ مشكلة اتصال/سيرفر مؤقتة: خزّن نسخة كاملة من الداتا في طابور دائم
+      // هيحاول يبعتها تلقائياً في الخلفية لحد ما تنجح - حتى لو قفلت التاب.
+      if (!currentPendingId) {
+        currentPendingId = enqueueFailedSubmission(data);
+      }
+      setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — your data is still here AND saved on this device; it will keep retrying automatically in the background. You can also tap Submit again.', 'error');
+    }
   } finally {
     submitBtn.disabled = false;
   }
