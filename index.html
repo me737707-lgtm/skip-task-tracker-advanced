@@ -30,7 +30,7 @@ body {
   z-index: 1;
 }
 h1 { text-align: center; margin-bottom: 5px; font-size: 2rem; font-weight: 700; color: #ffffff; }
-.prayer-text { text-align: center; margin-bottom: 30px; font-size: 1rem; color: #cbd5e0; font-weight: 600; direction: rtl; }
+.prayer-text { text-align: center; margin-bottom: 20px; font-size: 1rem; color: #cbd5e0; font-weight: 600; direction: rtl; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .full-width { grid-column: 1 / -1; }
 .form-group { position: relative; }
@@ -73,171 +73,81 @@ button:disabled { background: #3a7ca8; cursor: not-allowed; opacity: 0.7; }
 #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 1.1rem; min-height: 24px; }
 .success { color: #69db7c; }
 .error { color: #ff6b6b; }
-.info { color: #4dabf7; }
-.warning { color: #ffd43b; }
 label span { color: #ff6b6b; }
 
-.screenshot-section {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px dashed rgba(77, 171, 247, 0.4);
+/* -------- Screenshot uploader -------- */
+.drop-zone {
+  border: 2px dashed rgba(255,255,255,0.25);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
-  margin-top: 10px;
-  transition: all 0.3s;
-}
-.screenshot-section.required-empty { border-color: rgba(255, 107, 107, 0.6); }
-.screenshot-section:hover { border-color: rgba(77, 171, 247, 0.8); background: rgba(255, 255, 255, 0.08); }
-.screenshot-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 15px;
-}
-.screenshot-btn {
-  flex: 1;
-  min-width: 140px;
-  padding: 12px 20px;
-  background: rgba(77, 171, 247, 0.2);
-  border: 1px solid #4dabf7;
-  border-radius: 8px;
-  color: #4dabf7;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  width: auto;
-  margin: 0;
+  transition: all 0.2s ease;
+  background: rgba(255,255,255,0.04);
 }
-.screenshot-btn:hover { background: rgba(77, 171, 247, 0.4); color: #fff; }
-.screenshot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.preview-container {
-  position: relative;
-  display: none;
-  margin-top: 15px;
-}
-.preview-container.visible { display: block; }
-.preview-container img {
+.drop-zone.dragover { border-color: #4dabf7; background: rgba(77,171,247,0.1); }
+.drop-zone p { color: #cbd5e0; font-size: 0.95rem; }
+.drop-zone small { margin-top: 6px; }
+#screenshotPreviewWrap { margin-top: 12px; display: none; text-align: center; }
+#screenshotPreviewWrap.visible { display: block; }
+#screenshotPreview {
   max-width: 100%;
-  max-height: 300px;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  max-height: 220px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
 }
-.remove-btn {
-  position: absolute;
-  top: -10px;
-  right: -10px;
+.remove-shot-btn {
+  display: inline-block;
+  margin-top: 8px;
+  width: auto;
+  padding: 6px 16px;
+  font-size: 0.85rem;
   background: #ff6b6b;
   color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  margin: 0;
 }
-.remove-btn:hover { background: #ff4757; }
-#screenshotFileInput { display: none; }
-.screenshot-meta { font-size: 0.8rem; color: #8fd19e; margin-top: 8px; }
-
-.progress-wrap {
-  display: none;
-  margin-top: 20px;
-}
-.progress-wrap.visible { display: block; }
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: #cbd5e0;
-  margin-bottom: 6px;
-}
-.progress-track {
+.progress-outer {
+  margin-top: 10px;
   width: 100%;
   height: 10px;
-  background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
+  background: rgba(255,255,255,0.1);
   overflow: hidden;
+  display: none;
 }
-.progress-fill {
+.progress-outer.visible { display: block; }
+.progress-inner {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #4dabf7, #69db7c);
-  border-radius: 6px;
+  background: #4dabf7;
   transition: width 0.15s ease;
 }
+.progress-label { font-size: 0.85rem; color: #cbd5e0; margin-top: 4px; text-align: center; }
 
-/* Spinner animation for google.script.run */
-.spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top-color: #4dabf7;
-  animation: spin 0.8s ease-in-out infinite;
-  vertical-align: middle;
-  margin-right: 8px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.draft-banner {
+/* -------- Pending / recovery banner -------- */
+#pendingBanner {
   display: none;
   background: rgba(255, 212, 59, 0.12);
-  border: 1px solid rgba(255, 212, 59, 0.5);
+  border: 1px solid rgba(255, 212, 59, 0.4);
+  color: #ffe066;
+  padding: 12px 16px;
   border-radius: 10px;
-  padding: 14px 16px;
   margin-bottom: 20px;
   font-size: 0.9rem;
-  color: #ffe08a;
+  text-align: center;
 }
-.draft-banner.visible { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.draft-banner-buttons { display: flex; gap: 8px; }
-.draft-banner-buttons button { width: auto; margin: 0; padding: 8px 14px; font-size: 0.85rem; }
-.btn-restore { background: #ffd43b; color: #000; }
-.btn-discard { background: rgba(255,255,255,0.15); color: #fff; }
-
-.pending-banner {
-  display: none;
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid rgba(255, 107, 107, 0.5);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
+#pendingBanner.visible { display: block; }
+#pendingBanner button {
+  margin-top: 8px;
+  width: auto;
+  padding: 8px 18px;
   font-size: 0.9rem;
-  color: #ffb3b3;
+  background: #ffd43b;
 }
-.pending-banner.visible { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.pending-banner-buttons { display: flex; gap: 8px; }
-.pending-banner-buttons button { width: auto; margin: 0; padding: 8px 14px; font-size: 0.85rem; }
-.btn-retry-now { background: #4dabf7; color: #000; }
-
-.conn-banner {
-  display: none;
-  background: rgba(77, 171, 247, 0.12);
-  border: 1px solid rgba(77, 171, 247, 0.5);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  color: #a5d8ff;
-  line-height: 1.5;
-}
-.conn-banner.visible { display: block; }
-.conn-banner strong { color: #74c0fc; }
 
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
   h1 { font-size: 1.5rem; }
   .frames-container { grid-template-columns: 1fr; }
-  .screenshot-buttons { flex-direction: column; }
-  .screenshot-btn { width: 100%; }
 }
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -277,21 +187,10 @@ label span { color: #ff6b6b; }
   <h1>Skip Task Tracker</h1>
   <p class="prayer-text">❤️ ادعوا لأخونا علي ويكا بالرحمة والمغفرة ❤️</p>
 
-  <div class="conn-banner" id="connBanner"></div>
-
-  <div class="draft-banner" id="draftBanner">
-    <span>💾 We found an unsent submission you started earlier. Restore it?</span>
-    <div class="draft-banner-buttons">
-      <button type="button" class="btn-restore" onclick="restoreDraft()">Restore</button>
-      <button type="button" class="btn-discard" onclick="discardDraft()">Discard</button>
-    </div>
-  </div>
-
-  <div class="pending-banner" id="pendingBanner">
-    <span id="pendingBannerText">⚠️ 0 submission(s) could not reach the server yet. They are saved on this device and will be sent automatically.</span>
-    <div class="pending-banner-buttons">
-      <button type="button" class="btn-retry-now" onclick="attemptFlushFailedQueue(false)">Retry Now</button>
-    </div>
+  <div id="pendingBanner">
+    <span id="pendingBannerText">You have an unsent report saved on this device. Retrying automatically…</span>
+    <br>
+    <button type="button" id="pendingRetryBtn">Retry now</button>
   </div>
 
   <form id="taskForm" autocomplete="off">
@@ -426,35 +325,23 @@ label span { color: #ff6b6b; }
         </div>
       </div>
 
+      <!-- ✅ Screenshot uploader - إجباري -->
       <div class="form-group full-width">
-        <label>📸 Screenshot <span>*</span> (required)</label>
-        <div class="screenshot-section" id="screenshotSection">
-          <div class="screenshot-buttons">
-            <button type="button" class="screenshot-btn" id="uploadFileBtn" onclick="document.getElementById('screenshotFileInput').click()">
-              📁 Upload Image
-            </button>
-            <button type="button" class="screenshot-btn" id="captureScreenBtn" onclick="captureScreen()">
-              🖥️ Capture Screen
-            </button>
-          </div>
-          <input type="file" id="screenshotFileInput" accept="image/*" onchange="handleFileSelect(this)">
-          <div class="preview-container" id="previewContainer">
-            <img id="previewImage" src="" alt="Screenshot Preview">
-            <button type="button" class="remove-btn" onclick="removeScreenshot()" title="Remove Screenshot">&times;</button>
-          </div>
-          <div class="screenshot-meta" id="screenshotMeta"></div>
-          <small style="margin-top: 10px;">Supported: PNG, JPG, JPEG. Max size: 5MB. Images are automatically optimized before upload.</small>
+        <label>Screenshot <span>*</span></label>
+        <div class="drop-zone" id="dropZone">
+          <p>📷 Click to choose a file, drag & drop an image here, or press <b>Ctrl+V</b> to paste a screenshot</p>
+          <small>JPG/PNG - it will be compressed automatically before upload</small>
+          <input type="file" id="screenshotInput" accept="image/*" style="display:none;">
         </div>
-      </div>
-
-      <div class="full-width progress-wrap" id="progressWrap">
-        <div class="progress-label">
-          <span id="progressPhaseLabel">Uploading...</span>
-          <span id="progressPercentLabel">0%</span>
+        <div id="screenshotPreviewWrap">
+          <img id="screenshotPreview" src="" alt="Screenshot preview">
+          <br>
+          <button type="button" class="remove-shot-btn" id="removeShotBtn">Remove</button>
         </div>
-        <div class="progress-track">
-          <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-outer" id="uploadProgressOuter">
+          <div class="progress-inner" id="uploadProgressInner"></div>
         </div>
+        <div class="progress-label" id="uploadProgressLabel"></div>
       </div>
 
       <div class="full-width">
@@ -479,22 +366,16 @@ label span { color: #ff6b6b; }
 
 <script>
 /* =====================================================
-   ✅ v7.3: إعدادات
+   ✅ رابط الـ API — وضع مزدوج (Dual Mode)
 ===================================================== */
 const INJECTED_URL = "<?= apiUrl ?>";
-const MANUAL_URL = "https://script.google.com/macros/s/AKfycbz9EU2EXRFYu0LYWUi9iekYAcHq6z7DwAGBYLEIHpmcdMaImPh8IUjKLqp2wJcDdJA5/exec";
+const MANUAL_URL = "https://script.google.com/macros/s/AKfycbwIPUhnF1bcHn7OZ4Fc4G9vdAFYg8f5LjcmOuvRFtw3OncqUE46wH6Iy6dN3lkEp-H4/exec";
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
-const MAX_SUBMIT_RETRIES = 3;
-const RETRY_BASE_DELAY_MS = 1500;
-const SUBMIT_TIMEOUT_MS = 90000;
-const IMAGE_MAX_DIMENSION = 1600;
-const IMAGE_JPEG_QUALITY = 0.72;
-const DRAFT_STORAGE_KEY = "skipTaskTracker_draft_v7";
-const FAILED_QUEUE_KEY = "skipTaskTracker_failedQueue_v7";
-const BACKGROUND_RETRY_INTERVAL_MS = 25000;
-const PING_TIMEOUT_MS = 15000;
-let currentPendingId = null;
+const STORAGE_KEY = "skipTaskTracker_pendingSubmissions_v1";
+const MAX_IMAGE_DIMENSION = 1600;   // أقصى عرض/ارتفاع بعد الضغط
+const IMAGE_QUALITY = 0.72;         // جودة الـ JPEG بعد الضغط
+const MAX_UPLOAD_RETRIES = 6;
 
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
@@ -520,189 +401,31 @@ const shiftSelect = document.getElementById('shift');
 const submitBtn = document.getElementById('submitBtn');
 const customModal = document.getElementById('customModal');
 const modalMessage = document.getElementById('modalMessage');
-const screenshotSection = document.getElementById('screenshotSection');
-const draftBanner = document.getElementById('draftBanner');
-const connBanner = document.getElementById('connBanner');
 
-const progressWrap = document.getElementById('progressWrap');
-const progressFill = document.getElementById('progressFill');
-const progressPercentLabel = document.getElementById('progressPercentLabel');
-const progressPhaseLabel = document.getElementById('progressPhaseLabel');
+const dropZone = document.getElementById('dropZone');
+const screenshotInput = document.getElementById('screenshotInput');
+const screenshotPreviewWrap = document.getElementById('screenshotPreviewWrap');
+const screenshotPreview = document.getElementById('screenshotPreview');
+const removeShotBtn = document.getElementById('removeShotBtn');
+const uploadProgressOuter = document.getElementById('uploadProgressOuter');
+const uploadProgressInner = document.getElementById('uploadProgressInner');
+const uploadProgressLabel = document.getElementById('uploadProgressLabel');
 
-const previewContainer = document.getElementById('previewContainer');
-const previewImage = document.getElementById('previewImage');
-const screenshotMeta = document.getElementById('screenshotMeta');
-let screenshotBase64 = "";
-let screenshotFileName = "";
-let existingScreenshotUrl = "";
+const pendingBanner = document.getElementById('pendingBanner');
+const pendingBannerText = document.getElementById('pendingBannerText');
+const pendingRetryBtn = document.getElementById('pendingRetryBtn');
 
-/* =====================================================
-   ✅✅✅ v7.3: google.script.run - الحل النهائي ✅✅✅
-   هذه الدالة بتشوف هل google.script.run متاح
-   (يعني الفورم متخدم من نفس السكريبت)
-===================================================== */
-function isRunnerAvailable() {
-  try {
-    return typeof google !== 'undefined' &&
-           typeof google.script !== 'undefined' &&
-           typeof google.script.run !== 'undefined';
-  } catch (e) {
-    return false;
-  }
-}
+/* current selected screenshot as a compressed base64 string (data URL) */
+let currentScreenshot = null; // { base64, mimeType, dataUrl }
 
-/* ✅ الإرسال عبر google.script.run (الطريقة الأساسية - بيتخطى CORS كلياً) */
-function submitViaRunner(payload) {
-  return new Promise(function(resolve, reject) {
-    // Timeout safety: لو السيرفر معلق وميردش
-    const timeoutId = setTimeout(function() {
-      reject({ runnerLevel: true, message: 'Server took too long to respond. Your data is saved and will retry automatically.' });
-    }, SUBMIT_TIMEOUT_MS);
-
-    google.script.run
-      .withSuccessHandler(function(result) {
-        clearTimeout(timeoutId);
-        // result هو plain object: { ok: true } أو { ok: false, error: "..." }
-        resolve(result);
-      })
-      .withFailureHandler(function(err) {
-        clearTimeout(timeoutId);
-        // failureHandler بيشتغل لما:
-        // 1. السيرفرير error مش معمول returnله
-        // 2. الـ permission مش مسموح
-        // 3. الـ communication channel فشل
-        var errMsg = "";
-        if (err && err.message) {
-          errMsg = err.message;
-        } else if (typeof err === 'string') {
-          errMsg = err;
-        } else {
-          errMsg = "Server communication failed. Your data is saved on this device.";
-        }
-        reject({ runnerLevel: true, message: errMsg });
-      })
-      .submitForm(payload);
+/* ---------- UUID (with fallback for old browsers) ---------- */
+function makeUUID() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
   });
-}
-
-/* ✅ الـ Ping عبر google.script.run */
-function pingViaRunner() {
-  return new Promise(function(resolve, reject) {
-    const timeoutId = setTimeout(function() {
-      reject(new Error('Ping timeout'));
-    }, PING_TIMEOUT_MS);
-
-    google.script.run
-      .withSuccessHandler(function(result) {
-        clearTimeout(timeoutId);
-        resolve(result);
-      })
-      .withFailureHandler(function(err) {
-        clearTimeout(timeoutId);
-        reject(err);
-      })
-      .pingServer();
-  });
-}
-
-/* ✅ Flush Queue عبر google.script.run */
-function flushQueueViaRunner() {
-  return new Promise(function(resolve, reject) {
-    const timeoutId = setTimeout(function() {
-      reject(new Error('Flush timeout'));
-    }, 30000);
-
-    google.script.run
-      .withSuccessHandler(function(result) {
-        clearTimeout(timeoutId);
-        resolve(result);
-      })
-      .withFailureHandler(function(err) {
-        clearTimeout(timeoutId);
-        reject(err);
-      })
-      .flushQueueRunner();
-  });
-}
-
-/* =====================================================
-   ✅ v7.3: Connection Diagnostics
-===================================================== */
-function showConnBanner(html) {
-  connBanner.innerHTML = html;
-  connBanner.classList.add('visible');
-}
-function hideConnBanner() {
-  connBanner.classList.remove('visible');
-}
-
-async function checkServerConnection() {
-  // ✅ v7.3: جرب google.script.run الأول
-  if (isRunnerAvailable()) {
-    try {
-      const result = await pingViaRunner();
-      if (result && result.ok) {
-        showConnBanner('✅ <strong>متصل بالسيرفر</strong> عبر القناة الآمنة (google.script.run). لا مشاكل CORS أو redirect.');
-        return { ok: true, method: 'runner' };
-      }
-    } catch (err) {
-      return {
-        ok: false,
-        reason: 'runner_error',
-        message: '⚠️ <strong>لا يمكن الوصول للسيرفر.</strong> جرب تعمل Refresh للصفحة. لو المشكلة مستمرة، افتح الرابط مباشرة في تاب جديدة.'
-      };
-    }
-  }
-
-  // Fallback: HTTP ping (لو google.script.run مش متاح)
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(function () { controller.abort(); }, PING_TIMEOUT_MS);
-    const res = await fetch(API_URL + '?action=ping', { method: 'GET', redirect: 'follow', signal: controller.signal });
-    clearTimeout(timer);
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (e) { data = null; }
-
-    if (data && data.ok) {
-      hideConnBanner();
-      return { ok: true, method: 'http' };
-    }
-    const lower = text.toLowerCase();
-    if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('sign in') !== -1) {
-      return {
-        ok: false,
-        reason: 'not_public',
-        message: '⚠️ <strong>إعدادات الـ Deployment غلط.</strong> الأدمن لازم يعمل Deploy جديد بخيار <strong>"Who has access: Anyone"</strong> (مش "Anyone with Google account").'
-      };
-    }
-    return {
-      ok: false,
-      reason: 'unexpected',
-      message: '⚠️ السيرفر رد رد غير متوقع. تأكد من إن الرابط صحيح.'
-    };
-  } catch (err) {
-    if (err && err.name === 'AbortError') {
-      return {
-        ok: false,
-        reason: 'timeout',
-        message: '⚠️ السيرفر مش بيرد. ممكن يكون النت ضعيف. الداتا هتتبعت تلقائياً لما الاتصال يرجع.'
-      };
-    }
-    return {
-      ok: false,
-      reason: 'blocked',
-      message: '⚠️ <strong>المتصفح مش قادر يوصل للسيرفر.</strong> جرب: (1) اقفل الـ ad-blocker، (2) افتح الرابط مباشرة في تاب جديدة.'
-    };
-  }
-}
-
-async function diagnoseAndNotify() {
-  const result = await checkServerConnection();
-  if (!result.ok && result.message) {
-    showConnBanner(result.message);
-  }
-  return result;
 }
 
 /* ---------- Timestamp ---------- */
@@ -746,7 +469,6 @@ issueSelect.addEventListener('change', function () {
   } else if (value === 'Other') {
     otherSubGroup.classList.add('visible');
   }
-  scheduleDraftSave();
 });
 
 edgeCaseSubIssueSelect.addEventListener('change', function () {
@@ -757,7 +479,6 @@ edgeCaseSubIssueSelect.addEventListener('change', function () {
     edgeCaseDescInput.removeAttribute('required');
     edgeCaseDescRequired.style.display = 'none';
   }
-  scheduleDraftSave();
 });
 
 otherSubIssueSelect.addEventListener('change', function () {
@@ -775,7 +496,6 @@ otherSubIssueSelect.addEventListener('change', function () {
     otherReasonGroup.classList.add('visible');
     otherReasonDescInput.setAttribute('required', 'required');
   }
-  scheduleDraftSave();
 });
 
 function validateFrame(input) {
@@ -783,162 +503,17 @@ function validateFrame(input) {
   if (input.value.length > 3) input.value = input.value.slice(0, 3);
 }
 
+/* ---------- Auto-fill Task ID ---------- */
 taskLinkInput.addEventListener('input', function () {
   const match = this.value.match(/\/id\/(\d+)/);
   if (match && match[1]) taskIdInput.value = match[1];
 });
 
-/* ---------- Image Compression ---------- */
-function compressImage(dataUrl) {
-  return new Promise(function (resolve, reject) {
-    const img = new Image();
-    img.onload = function () {
-      let w = img.width;
-      let h = img.height;
-      if (w > IMAGE_MAX_DIMENSION || h > IMAGE_MAX_DIMENSION) {
-        if (w >= h) {
-          h = Math.round(h * (IMAGE_MAX_DIMENSION / w));
-          w = IMAGE_MAX_DIMENSION;
-        } else {
-          w = Math.round(w * (IMAGE_MAX_DIMENSION / h));
-          h = IMAGE_MAX_DIMENSION;
-        }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
-      try {
-        const compressed = canvas.toDataURL('image/jpeg', IMAGE_JPEG_QUALITY);
-        resolve(compressed);
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = function () { reject(new Error('Could not load image for compression.')); };
-    img.src = dataUrl;
-  });
-}
-
-function estimateBase64Bytes(dataUrl) {
-  const base64 = dataUrl.split(',')[1] || '';
-  return Math.floor(base64.length * 0.75);
-}
-
-function formatBytes(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-}
-
-/* ---------- Screenshot Functions ---------- */
-function handleFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    setStatus('Error: Please select an image file.', 'error');
-    input.value = '';
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    setStatus('Error: Image size must be less than 5MB.', 'error');
-    input.value = '';
-    return;
-  }
-  processFile(file);
-}
-
-async function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = async function (e) {
-    await applyCompressedScreenshot(e.target.result, file.name || "screenshot.png");
-  };
-  reader.readAsDataURL(file);
-}
-
-async function applyCompressedScreenshot(rawDataUrl, fileName) {
-  existingScreenshotUrl = "";
-  setStatus('Optimizing image...', 'info');
-  try {
-    const compressed = await compressImage(rawDataUrl);
-    screenshotBase64 = compressed;
-    screenshotFileName = (fileName.replace(/\.[^/.]+$/, "") || "screenshot") + ".jpg";
-    previewImage.src = screenshotBase64;
-    previewContainer.classList.add('visible');
-    screenshotSection.classList.remove('required-empty');
-    screenshotMeta.textContent = "Optimized size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
-    setStatus('', '');
-  } catch (err) {
-    screenshotBase64 = rawDataUrl;
-    screenshotFileName = fileName;
-    previewImage.src = screenshotBase64;
-    previewContainer.classList.add('visible');
-    screenshotSection.classList.remove('required-empty');
-    screenshotMeta.textContent = "Size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
-    setStatus('', '');
-  }
-  scheduleDraftSave();
-}
-
-async function captureScreen() {
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      setStatus('Error: Screen capture is not supported. Please use Upload Image instead.', 'error');
-      return;
-    }
-    const captureBtn = document.getElementById('captureScreenBtn');
-    captureBtn.disabled = true;
-    captureBtn.textContent = '📸 Capturing...';
-
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: false });
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    await video.play();
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    stream.getTracks().forEach(track => track.stop());
-
-    const rawDataUrl = canvas.toDataURL('image/png');
-    const fileName = "screen_capture_" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".png";
-    captureBtn.disabled = false;
-    captureBtn.textContent = '🖥️ Capture Screen';
-    await applyCompressedScreenshot(rawDataUrl, fileName);
-  } catch (err) {
-    const captureBtn = document.getElementById('captureScreenBtn');
-    captureBtn.disabled = false;
-    captureBtn.textContent = '🖥️ Capture Screen';
-    if (err.name === 'NotAllowedError') {
-      setStatus('Screen capture was cancelled or denied.', 'error');
-    } else {
-      setStatus('Error capturing screen: ' + err.message, 'error');
-    }
-  }
-}
-
-function removeScreenshot() {
-  screenshotBase64 = "";
-  screenshotFileName = "";
-  existingScreenshotUrl = "";
-  previewImage.src = "";
-  previewContainer.classList.remove('visible');
-  screenshotMeta.textContent = "";
-  document.getElementById('screenshotFileInput').value = '';
-  scheduleDraftSave();
-}
-
 /* ---------- Helpers ---------- */
 function formatNameCase(str) {
   if (!str) return "";
   str = str.toLowerCase();
-  return str.replace(/\b\w/g, function (char) { return char.toUpperCase(); });
+  return str.replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function formatUser(rawUser) {
@@ -974,22 +549,6 @@ function setStatus(msg, type) {
   statusPara.className = type || '';
 }
 
-/* ---------- Progress Bar ---------- */
-function showProgress(phaseLabel) {
-  progressWrap.classList.add('visible');
-  progressPhaseLabel.textContent = phaseLabel || 'Uploading...';
-  setProgress(0);
-}
-function setProgress(percent) {
-  const p = Math.max(0, Math.min(100, Math.round(percent)));
-  progressFill.style.width = p + '%';
-  progressPercentLabel.textContent = p + '%';
-}
-function hideProgress() {
-  progressWrap.classList.remove('visible');
-  setProgress(0);
-}
-
 /* ---------- Modal ---------- */
 function showModal(message) {
   modalMessage.innerText = message;
@@ -998,13 +557,13 @@ function showModal(message) {
 function closeModal() { customModal.style.display = 'none'; }
 function copyModalMessage() {
   const text = modalMessage.innerText;
-  navigator.clipboard.writeText(text).then(function () {
+  navigator.clipboard.writeText(text).then(() => {
     const btn = document.querySelector('.btn-copy');
     const originalText = btn.innerText;
     btn.innerText = "Copied!";
     btn.style.background = "#4dabf7";
-    setTimeout(function () { btn.innerText = originalText; btn.style.background = "#69db7c"; }, 1500);
-  }).catch(function () { alert("Failed to copy text."); });
+    setTimeout(() => { btn.innerText = originalText; btn.style.background = "#69db7c"; }, 1500);
+  }).catch(() => { alert("Failed to copy text."); });
 }
 
 function getGulpMessage() {
@@ -1021,321 +580,275 @@ function getGulpMessage() {
 }
 
 /* =====================================================
-   ✅ v7.3: الإرسال - الطريقة الأساسية عبر google.script.run
-   والـ fallback عبر XHR لو google.script.run مش متاح
+   ✅ Screenshot capture: file picker + drag&drop + paste
+   بيتم ضغط الصورة (resize + JPEG) قبل أي رفع، عشان:
+   - ترفع أسرع بكتير مع آلاف المستخدمين
+   - تدخل بسهولة في localStorage لو احتجنا نحفظها محلياً
 ===================================================== */
-function postWithXHR(payload) {
-  return new Promise(function (resolve, reject) {
+dropZone.addEventListener('click', () => screenshotInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    handleImageFile(e.dataTransfer.files[0]);
+  }
+});
+screenshotInput.addEventListener('change', (e) => {
+  if (e.target.files && e.target.files[0]) handleImageFile(e.target.files[0]);
+});
+document.addEventListener('paste', (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const file = items[i].getAsFile();
+      if (file) { handleImageFile(file); break; }
+    }
+  }
+});
+removeShotBtn.addEventListener('click', () => {
+  currentScreenshot = null;
+  screenshotPreviewWrap.classList.remove('visible');
+  screenshotInput.value = '';
+});
+
+function handleImageFile(file) {
+  if (!file.type.startsWith('image/')) {
+    setStatus('Error: Selected file is not an image.', 'error');
+    return;
+  }
+  setStatus('Processing screenshot...', '');
+  const reader = new FileReader();
+  reader.onload = function (evt) {
+    const img = new Image();
+    img.onload = function () {
+      compressImage(img, function (dataUrl, base64) {
+        currentScreenshot = { base64: base64, mimeType: 'image/jpeg', dataUrl: dataUrl };
+        screenshotPreview.src = dataUrl;
+        screenshotPreviewWrap.classList.add('visible');
+        setStatus('', '');
+      });
+    };
+    img.onerror = function () { setStatus('Error: Could not read the image.', 'error'); };
+    img.src = evt.target.result;
+  };
+  reader.onerror = function () { setStatus('Error: Could not read the file.', 'error'); };
+  reader.readAsDataURL(file);
+}
+
+function compressImage(img, callback) {
+  let w = img.width, h = img.height;
+  if (w > MAX_IMAGE_DIMENSION || h > MAX_IMAGE_DIMENSION) {
+    if (w >= h) { h = Math.round(h * (MAX_IMAGE_DIMENSION / w)); w = MAX_IMAGE_DIMENSION; }
+    else { w = Math.round(w * (MAX_IMAGE_DIMENSION / h)); h = MAX_IMAGE_DIMENSION; }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+  const base64 = dataUrl.split(',')[1];
+  callback(dataUrl, base64);
+}
+
+/* =====================================================
+   ✅ Local persistence layer (zero data loss)
+   كل submission بيتحفظ محلياً فور الضغط على Submit، وميتشالش
+   إلا لما السيرفر يرجع ok:true فعلاً. لو الصورة اترفعت واتحفظ
+   لينكها، الـ retry مش هيعيد رفعها تاني (يوفر وقت وباندويدث).
+===================================================== */
+function loadPending() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function savePending(list) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) { /* storage full/unavailable - ignore */ }
+}
+function upsertPending(entry) {
+  const list = loadPending();
+  const idx = list.findIndex(x => x.submissionId === entry.submissionId);
+  if (idx >= 0) list[idx] = entry; else list.push(entry);
+  savePending(list);
+}
+function removePending(submissionId) {
+  const list = loadPending().filter(x => x.submissionId !== submissionId);
+  savePending(list);
+  updatePendingBanner();
+}
+function updatePendingBanner() {
+  const list = loadPending();
+  if (list.length > 0) {
+    pendingBannerText.textContent = list.length === 1
+      ? 'You have 1 unsent report saved on this device. Retrying automatically…'
+      : 'You have ' + list.length + ' unsent reports saved on this device. Retrying automatically…';
+    pendingBanner.classList.add('visible');
+  } else {
+    pendingBanner.classList.remove('visible');
+  }
+}
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+/* ---------- Low level POST with timeout + clear diagnostics ---------- */
+async function postJSON(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+      cache: "no-store"
+    });
+  } catch (netErr) {
+    clearTimeout(timer);
+    if (netErr && netErr.name === 'AbortError') {
+      throw new Error('Server took too long to respond. Please try again.');
+    }
+    throw new Error('Cannot connect to the server. Check your internet connection.');
+  }
+  clearTimeout(timer);
+
+  const text = await res.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch (e) { data = null; }
+
+  if (!data || typeof data !== 'object') {
+    console.error('Non-JSON response received. Status:', res.status, 'Body:', text.slice(0, 400));
+    const lower = text.toLowerCase();
+    if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
+      throw new Error('This form is not public yet. Admin: redeploy the Web App with "Who has access: Anyone" (not "Anyone with Google account").');
+    }
+    if (res.status === 404) {
+      throw new Error('The deployment link is invalid or was deleted (404). Admin: get a fresh /exec link from Deploy > Manage deployments.');
+    }
+    if (res.status >= 500) {
+      throw new Error('The script crashed before responding (Error ' + res.status + '). Admin: check Apps Script > Executions log.');
+    }
+    throw new Error('Server returned a page instead of data. Admin: verify the deployment is "New version" + "Execute as: Me" + "Who has access: Anyone".');
+  }
+  return data;
+}
+
+/* ---------- Image upload with progress bar (needs XHR for upload progress) ---------- */
+function uploadImageWithProgress(base64, mimeType, submissionId, onProgress) {
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', API_URL, true);
     xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-    xhr.timeout = SUBMIT_TIMEOUT_MS;
+    xhr.timeout = 60000;
 
-    xhr.upload.onprogress = function (evt) {
-      if (evt.lengthComputable) {
-        setProgress((evt.loaded / evt.total) * 95);
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
       }
     };
-    xhr.upload.onload = function () {
-      setProgress(96);
-      progressPhaseLabel.textContent = 'Saving on server...';
-    };
-
     xhr.onload = function () {
-      setProgress(100);
       let data = null;
-      try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
-
-      if (!data || typeof data !== 'object') {
-        const text = xhr.responseText || '';
-        const lower = text.toLowerCase();
-        if (lower.indexOf('accounts.google.com') !== -1 || lower.indexOf('servicelogin') !== -1 || lower.indexOf('signin') !== -1) {
-          reject({ networkLevel: true, reason: 'not_public', message: 'This form is not public yet. Admin: redeploy with "Who has access: Anyone".' });
-        } else if (xhr.status === 404) {
-          reject({ networkLevel: true, reason: 'not_found', message: 'The deployment link is invalid or was deleted (404).' });
-        } else if (xhr.status >= 500) {
-          reject({ networkLevel: true, reason: 'server_error', message: 'The script crashed (Error ' + xhr.status + ').' });
-        } else {
-          reject({ networkLevel: true, reason: 'unexpected', message: 'Server returned a page instead of data.' });
-        }
+      try { data = JSON.parse(xhr.responseText); } catch (e) { /* handled below */ }
+      if (!data) {
+        reject(new Error('Server returned an invalid response while uploading the screenshot.'));
+        return;
+      }
+      if (!data.ok) {
+        reject(new Error(data.error || 'Screenshot upload was rejected by the server.'));
         return;
       }
       resolve(data);
     };
+    xhr.onerror = function () { reject(new Error('Network error while uploading the screenshot.')); };
+    xhr.ontimeout = function () { reject(new Error('Screenshot upload timed out. Please try again.')); };
 
-    xhr.onerror = function () {
-      reject({ networkLevel: true, reason: 'network', message: 'Cannot connect to the server via HTTP. Try refreshing the page.' });
-    };
-    xhr.ontimeout = function () {
-      reject({ networkLevel: true, reason: 'timeout', message: 'Server took too long to respond.' });
-    };
-
-    xhr.send(JSON.stringify(payload));
+    xhr.send(JSON.stringify({
+      action: 'uploadImage',
+      submissionId: submissionId,
+      imageData: base64,
+      mimeType: mimeType
+    }));
   });
 }
 
-/* ✅ الدالة الرئيسية للإرسال - بتختار الطريقة المناسبة تلقائياً */
-async function postWithProgress(payload) {
-  // الطريقة الأولى: google.script.run (الأفضل - بيتخطى CORS والـ redirect)
-  if (isRunnerAvailable()) {
-    showProgress('Submitting via secure channel...');
-    // بما إن google.script.run مش بيدى progress، بنحاكيه
-    setProgress(20);
-    const progressSimulator = setInterval(function() {
-      const current = parseFloat(progressFill.style.width) || 0;
-      if (current < 85) setProgress(current + Math.random() * 8);
-    }, 500);
-
+/* ---------- Retry with exponential backoff ---------- */
+async function retryWithBackoff(fn, maxAttempts) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const result = await submitViaRunner(payload);
-      clearInterval(progressSimulator);
-      setProgress(100);
-      progressPhaseLabel.textContent = 'Done!';
-      return result;
-    } catch (err) {
-      clearInterval(progressSimulator);
-      throw err;
-    }
-  }
-
-  // الطريقة الثانية: XHR (fallback - لو الفورم مش متخدم من السكريبت)
-  showProgress('Uploading...');
-  return await postWithXHR(payload);
-}
-
-/* ✅ إعادة المحاولة */
-async function submitWithRetry(payload) {
-  let lastErr = null;
-  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
-    try {
-      if (attempt > 1) {
-        setStatus('Retrying submission (attempt ' + attempt + ' of ' + MAX_SUBMIT_RETRIES + ')...', 'warning');
-        showProgress('Retrying...');
-      }
-      const result = await postWithProgress(payload);
-      return result;
+      return await fn();
     } catch (err) {
       lastErr = err;
-      // لو الخطأ من نوع validation (من السيرفر نفسه)، منعيدش المحاولة
-      if (err && err.stage === 'validation') {
-        throw err;
-      }
-      if (attempt < MAX_SUBMIT_RETRIES) {
-        const delay = RETRY_BASE_DELAY_MS * attempt;
-        setStatus('Network hiccup — retrying in ' + Math.round(delay / 1000) + 's... (' + attempt + '/' + MAX_SUBMIT_RETRIES + ')', 'warning');
-        await new Promise(r => setTimeout(r, delay));
+      if (attempt < maxAttempts) {
+        const delay = Math.min(2000 * Math.pow(1.7, attempt - 1), 20000);
+        await sleep(delay);
       }
     }
   }
-  throw lastErr || new Error('Unexpected error.');
+  throw lastErr;
 }
 
 /* =====================================================
-   ✅ Draft Save/Restore
+   ✅ Core: process one submission entry (upload image if
+   needed, then submit form data). Used both for the live
+   form submit AND for resuming saved/failed submissions.
 ===================================================== */
-let draftSaveTimer = null;
-function scheduleDraftSave() {
-  clearTimeout(draftSaveTimer);
-  draftSaveTimer = setTimeout(saveDraftNow, 400);
-}
-
-function collectDraftData() {
-  return {
-    savedAt: new Date().toISOString(),
-    fields: {
-      labelerName: labelerNameInput.value,
-      userInput: userInput.value,
-      qcName: qcNameInput.value,
-      taskLink: taskLinkInput.value,
-      taskId: taskIdInput.value,
-      taskType: document.getElementById('taskType').value,
-      queueName: document.getElementById('queueName').value,
-      modality: document.getElementById('modality').value,
-      passStatus: document.getElementById('passStatus').value,
-      shift: shiftSelect.value,
-      issue: issueSelect.value,
-      edgeCaseSubIssue: edgeCaseSubIssueSelect.value,
-      edgeCaseDesc: edgeCaseDescInput.value,
-      otherSubIssue: otherSubIssueSelect.value,
-      otherReasonDesc: otherReasonDescInput.value,
-      frameStart: frameStartInput.value,
-      frameEnd: frameEndInput.value
-    },
-    screenshotBase64: screenshotBase64,
-    screenshotFileName: screenshotFileName,
-    existingScreenshotUrl: existingScreenshotUrl
-  };
-}
-
-function saveDraftNow() {
-  try {
-    const draft = collectDraftData();
-    const hasAnyContent = Object.values(draft.fields).some(v => String(v || '').trim() !== '') || draft.screenshotBase64;
-    if (hasAnyContent) {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    }
-  } catch (e) {
-    console.warn('Could not save draft:', e);
-  }
-}
-
-function clearDraft() {
-  try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (e) {}
-}
-
-function loadStoredDraft() {
-  try {
-    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) { return null; }
-}
-
-function restoreDraft() {
-  const draft = loadStoredDraft();
-  if (!draft) { draftBanner.classList.remove('visible'); return; }
-
-  const f = draft.fields || {};
-  labelerNameInput.value = f.labelerName || '';
-  userInput.value = f.userInput || '';
-  qcNameInput.value = f.qcName || '';
-  taskLinkInput.value = f.taskLink || '';
-  taskIdInput.value = f.taskId || '';
-  if (f.taskType) document.getElementById('taskType').value = f.taskType;
-  if (f.queueName) document.getElementById('queueName').value = f.queueName;
-  if (f.modality) document.getElementById('modality').value = f.modality;
-  if (f.passStatus) document.getElementById('passStatus').value = f.passStatus;
-  if (f.shift) shiftSelect.value = f.shift;
-  if (f.issue) { issueSelect.value = f.issue; issueSelect.dispatchEvent(new Event('change')); }
-  if (f.edgeCaseSubIssue) { edgeCaseSubIssueSelect.value = f.edgeCaseSubIssue; edgeCaseSubIssueSelect.dispatchEvent(new Event('change')); }
-  edgeCaseDescInput.value = f.edgeCaseDesc || '';
-  if (f.otherSubIssue) { otherSubIssueSelect.value = f.otherSubIssue; otherSubIssueSelect.dispatchEvent(new Event('change')); }
-  otherReasonDescInput.value = f.otherReasonDesc || '';
-  frameStartInput.value = f.frameStart || '';
-  frameEndInput.value = f.frameEnd || '';
-
-  if (draft.screenshotBase64) {
-    screenshotBase64 = draft.screenshotBase64;
-    screenshotFileName = draft.screenshotFileName || 'screenshot.jpg';
-    previewImage.src = screenshotBase64;
-    previewContainer.classList.add('visible');
-    screenshotMeta.textContent = "Restored size: " + formatBytes(estimateBase64Bytes(screenshotBase64));
-  }
-  existingScreenshotUrl = draft.existingScreenshotUrl || '';
-
-  draftBanner.classList.remove('visible');
-  setStatus('Draft restored. Please review and submit again.', 'info');
-}
-
-function discardDraft() {
-  clearDraft();
-  draftBanner.classList.remove('visible');
-}
-
-/* =====================================================
-   ✅ Failed Submission Queue
-===================================================== */
-function loadFailedQueue() {
-  try {
-    const raw = localStorage.getItem(FAILED_QUEUE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
-}
-
-function saveFailedQueue(arr) {
-  try { localStorage.setItem(FAILED_QUEUE_KEY, JSON.stringify(arr)); }
-  catch (e) { console.warn('Could not persist failed-submission queue:', e); }
-}
-
-function enqueueFailedSubmission(payload) {
-  const queue = loadFailedQueue();
-  const id = 'sub_' + new Date().getTime() + '_' + Math.floor(Math.random() * 1000000);
-  queue.push({ id: id, payload: payload, createdAt: new Date().toISOString(), attempts: 0 });
-  saveFailedQueue(queue);
-  renderPendingBanner();
-  return id;
-}
-
-function removeFromFailedQueue(id) {
-  const queue = loadFailedQueue().filter(item => item.id !== id);
-  saveFailedQueue(queue);
-  renderPendingBanner();
-}
-
-function renderPendingBanner() {
-  const queue = loadFailedQueue();
-  const banner = document.getElementById('pendingBanner');
-  const text = document.getElementById('pendingBannerText');
-  if (queue.length > 0) {
-    text.textContent = '⚠️ ' + queue.length + ' submission(s) could not reach the server yet. They are saved on this device and will be sent automatically.';
-    banner.classList.add('visible');
-  } else {
-    banner.classList.remove('visible');
-  }
-}
-
-let flushInProgress = false;
-async function attemptFlushFailedQueue(isBackgroundAttempt) {
-  if (flushInProgress) return;
-  const queue = loadFailedQueue();
-  if (queue.length === 0) return;
-
-  flushInProgress = true;
-  if (!isBackgroundAttempt) {
-    setStatus('Retrying ' + queue.length + ' saved submission(s)...', 'info');
+async function processSubmission(entry, progressCallback) {
+  // Step 1: upload image if we don't already have a URL for it
+  if (!entry.screenshotUrl) {
+    const result = await retryWithBackoff(() => {
+      return uploadImageWithProgress(entry.imageBase64, entry.imageMimeType, entry.submissionId, progressCallback);
+    }, MAX_UPLOAD_RETRIES);
+    entry.screenshotUrl = result.url;
+    upsertPending(entry); // احفظ اللينك فوراً - أي retry تاني مش هيرفع الصورة تاني
   }
 
-  for (const item of queue) {
+  // Step 2: submit the form row (small payload, fast, protected by dedupe on the server)
+  const payload = Object.assign({}, entry.formData, {
+    action: 'submitForm',
+    submissionId: entry.submissionId,
+    screenshotUrl: entry.screenshotUrl
+  });
+
+  const result = await retryWithBackoff(() => postJSON(payload), MAX_UPLOAD_RETRIES);
+  if (!result.ok) {
+    throw new Error(result.error || 'Server rejected the submission.');
+  }
+  return result;
+}
+
+/* ---------- Background recovery of anything left in localStorage ---------- */
+let recoveryInProgress = false;
+async function recoverPendingSubmissions(showUiFeedback) {
+  if (recoveryInProgress) return;
+  const list = loadPending();
+  if (list.length === 0) { updatePendingBanner(); return; }
+
+  recoveryInProgress = true;
+  updatePendingBanner();
+
+  for (const entry of list) {
     try {
-      // ✅ v7.3: استخدم postWithProgress اللي بيختار الطريقة المناسبة تلقائياً
-      const result = await postWithProgress(item.payload);
-      if (result && result.ok) {
-        removeFromFailedQueue(item.id);
-        if (item.id === currentPendingId) {
-          currentPendingId = null;
-          form.reset();
-          removeScreenshot();
-          screenshotSection.classList.remove('required-empty');
-          existingScreenshotUrl = "";
-          setTimestamp();
-          hideAllDynamicGroups();
-          clearDraft();
-          setStatus('✅ Your earlier submission just went through successfully.', 'success');
-        } else if (!isBackgroundAttempt) {
-          setStatus('✅ A saved submission was delivered successfully.', 'success');
-        }
-      } else if (result && result.screenshotUrl) {
-        item.payload.existingScreenshotUrl = result.screenshotUrl;
-        item.payload.screenshotData = "";
-        item.payload.screenshotName = "";
-        const q2 = loadFailedQueue().map(q => q.id === item.id ? item : q);
-        saveFailedQueue(q2);
-      }
+      await processSubmission(entry, null);
+      removePending(entry.submissionId);
+      if (showUiFeedback) setStatus('A previously unsent report was delivered successfully ✅', 'success');
     } catch (err) {
-      // لسه فاشل - هيتحاول تاني في المرة الجاية
+      // يفضل محفوظ في localStorage - هيتحاول تاني لاحقاً (تحميل صفحة / online / نداء يدوي)
+      console.error('Recovery failed for', entry.submissionId, err);
     }
   }
-  flushInProgress = false;
+  recoveryInProgress = false;
+  updatePendingBanner();
 }
 
-form.addEventListener('input', scheduleDraftSave);
-form.addEventListener('change', scheduleDraftSave);
-
-window.addEventListener('online', function () {
-  attemptFlushFailedQueue(true);
-  diagnoseAndNotify();
-});
-setInterval(function () { attemptFlushFailedQueue(true); }, BACKGROUND_RETRY_INTERVAL_MS);
-
-window.addEventListener('DOMContentLoaded', async function () {
-  const draft = loadStoredDraft();
-  if (draft) {
-    draftBanner.classList.add('visible');
-  }
-  renderPendingBanner();
-  diagnoseAndNotify();
-  attemptFlushFailedQueue(true);
-});
+pendingRetryBtn.addEventListener('click', () => recoverPendingSubmissions(true));
+window.addEventListener('online', () => recoverPendingSubmissions(true));
+window.addEventListener('load', () => recoverPendingSubmissions(false));
+// شبكة الأمان: نحاول كل دقيقة طالما فيه حاجة عالقة، من غير ما نضغط على السيرفر
+setInterval(() => { if (loadPending().length > 0) recoverPendingSubmissions(false); }, 60000);
 
 /* ---------- Submit ---------- */
 form.addEventListener('submit', async function (e) {
@@ -1390,110 +903,96 @@ form.addEventListener('submit', async function (e) {
   // 9. Other sub-selection
   if (issueSelect.value === 'Other' && !otherSubIssueSelect.value) { setStatus('Error: Please select a specific type for Other.', 'error'); return; }
 
-  // 10. Screenshot
-  if (!screenshotBase64 && !existingScreenshotUrl) {
-    setStatus('Error: Screenshot is required. Please attach or capture a screenshot.', 'error');
-    screenshotSection.classList.add('required-empty');
-    return;
+  // 10. ✅ Screenshot mandatory
+  if (!currentScreenshot) { setStatus('Error: Please attach a screenshot before submitting.', 'error'); return; }
+
+  // ---------- Data Preparation ----------
+  const formData = new FormData(form);
+  const finalLabelerName = formatNameCase(labelerVal);
+  const finalQcName = formatNameCase(qcVal);
+  const finalUser = userResult.value;
+  const finalLink = cleanTaskLink(taskLinkVal);
+
+  let finalIssue = formData.get('issue');
+  if (finalIssue === 'edge case') {
+    const subIssue = edgeCaseSubIssueSelect.value;
+    finalIssue = (subIssue === 'Other')
+      ? 'edge case: ' + edgeCaseDescInput.value.trim()
+      : 'edge case: ' + subIssue;
+  } else if (finalIssue === 'Other') {
+    const subIssue = otherSubIssueSelect.value;
+    finalIssue = (subIssue === 'Lidar points shifting vertically')
+      ? "Other: Lidar Points Shift Vertically"
+      : 'Other: ' + otherReasonDescInput.value.trim();
   }
-  screenshotSection.classList.remove('required-empty');
 
-  // Build payload
-  const finalIssue = issueSelect.value === 'Other' ? (otherSubIssueSelect.value || issueSelect.value) : issueSelect.value;
-  const finalEdgeDesc = (issueSelect.value === 'edge case') ? ((edgeCaseSubIssueSelect.value === 'Other') ? edgeCaseDescInput.value.trim() : edgeCaseSubIssueSelect.value) : '';
-  const issuedFrames = issuedFramesGroup.classList.contains('visible') ? (frameStartInput.value + " - " + frameEndInput.value) : '';
-  const otherReason = otherReasonGroup.classList.contains('visible') ? otherReasonDescInput.value.trim() : '';
+  let finalFrames = "";
+  if (issuedFramesGroup.classList.contains('visible')) {
+    finalFrames = "from frame " + frameStartInput.value + " to frame " + frameEndInput.value;
+  }
 
-  const payload = {
-    timestamp: timestampInput.value,
-    labelerName: formatNameCase(labelerVal),
-    user: userResult.value,
-    qcName: formatNameCase(qcVal),
-    taskLink: taskLinkVal,
-    taskId: taskIdInput.value.trim(),
-    taskType: document.getElementById('taskType').value,
-    queueName: document.getElementById('queueName').value,
-    modality: document.getElementById('modality').value,
-    passStatus: document.getElementById('passStatus').value,
-    issue: finalIssue,
-    issuedFrames: issuedFrames,
-    edgeCaseDesc: finalEdgeDesc || otherReason,
-    shift: shiftSelect.value,
-    screenshotData: screenshotBase64,
-    screenshotName: screenshotFileName
+  const submissionId = makeUUID();
+  const entry = {
+    submissionId: submissionId,
+    createdAt: Date.now(),
+    imageBase64: currentScreenshot.base64,
+    imageMimeType: currentScreenshot.mimeType,
+    screenshotUrl: null,
+    formData: {
+      timestamp: formData.get('timestamp'),
+      labelerName: finalLabelerName,
+      user: finalUser,
+      qcName: finalQcName,
+      taskLink: finalLink,
+      taskId: formData.get('taskId'),
+      taskType: formData.get('taskType'),
+      queueName: formData.get('queueName'),
+      modality: formData.get('modality'),
+      passStatus: formData.get('passStatus'),
+      issue: finalIssue,
+      issuedFrames: finalFrames,
+      edgeCaseDesc: edgeCaseDescInput.value.trim() || "",
+      shift: formData.get('shift')
+    }
   };
 
-  if (existingScreenshotUrl) {
-    payload.existingScreenshotUrl = existingScreenshotUrl;
-    payload.screenshotData = "";
-    payload.screenshotName = "";
-  }
+  // ✅ نحفظ الداتا محلياً قبل أي محاولة شبكة - لو حصل أي حاجة (قفل تاب، نت وقع،
+  // إلخ) الداتا مش هتضيع وهتترسل تلقائي أول ما يرجع النت أو الصفحة تتفتح تاني
+  upsertPending(entry);
+  updatePendingBanner();
 
-  // Submit
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-  setStatus('<span class="spinner"></span> Connecting to server...', 'info');
-  hideProgress();
+  uploadProgressOuter.classList.add('visible');
+  uploadProgressInner.style.width = '0%';
+  uploadProgressLabel.textContent = 'Uploading screenshot... 0%';
+  setStatus('Submitting...', '');
 
   try {
-    const result = await submitWithRetry(payload);
+    await processSubmission(entry, function (pct) {
+      uploadProgressInner.style.width = pct + '%';
+      uploadProgressLabel.textContent = 'Uploading screenshot... ' + pct + '%';
+      if (pct >= 100) uploadProgressLabel.textContent = 'Saving report...';
+    });
 
-    if (result.ok) {
-      // ✅ Success!
-      hideProgress();
-      setProgress(100);
-
-      if (result.queued) {
-        setStatus('✅ Submitted! (queued — will appear in sheet within a few minutes)', 'success');
-      } else {
-        setStatus('✅ Submitted successfully!', 'success');
-      }
-
-      const gulpMsg = getGulpMessage();
-      showModal(gulpMsg);
-
-      form.reset();
-      removeScreenshot();
-      screenshotSection.classList.remove('required-empty');
-      existingScreenshotUrl = "";
-      setTimestamp();
-      hideAllDynamicGroups();
-      clearDraft();
-
-    } else {
-      // Server returned an error (validation, upload, etc.)
-      hideProgress();
-      const errMsg = result.error || 'Unknown server error.';
-      setStatus('❌ ' + errMsg, 'error');
-
-      // لو الصورة اترفعت بس الكتابة فشلت، احتفظ برابط الصورة
-      if (result.screenshotUrl) {
-        existingScreenshotUrl = result.screenshotUrl;
-        screenshotBase64 = "";
-        screenshotFileName = "";
-      }
-    }
-
+    // ✅ نجح فعلاً - دلوقتي بس نمسح الفورم والداتا المحفوظة محلياً
+    removePending(submissionId);
+    showModal(getGulpMessage());
+    form.reset();
+    setTimestamp();
+    hideAllDynamicGroups();
+    currentScreenshot = null;
+    screenshotPreviewWrap.classList.remove('visible');
+    screenshotInput.value = '';
+    uploadProgressOuter.classList.remove('visible');
+    uploadProgressLabel.textContent = '';
+    setStatus('', '');
   } catch (err) {
-    // Network/communication error after all retries
-    hideProgress();
-    const errMsg = (err && err.message) || 'Unknown error.';
-
-    // ✅ خزّن في الـ failed queue عشان يتبعت تلقائياً
-    currentPendingId = enqueueFailedSubmission(payload);
-
-    setStatus('Failed ❌: ' + errMsg + ' — your data is still here AND saved on this device; it will keep retrying automatically in the background. You can also tap Submit again.', 'error');
-
-    // احتفظ بالصورة لو السيرفر رجع رابطها
-    if (err && err.screenshotUrl) {
-      existingScreenshotUrl = err.screenshotUrl;
-      screenshotBase64 = "";
-      screenshotFileName = "";
-    }
+    // ✅ فشل: الفورم بيفضل زي ما هو (من غير reset) والداتا متحفوظة في
+    // localStorage وهتتحاول تاني تلقائياً - اليوزر ملوش داعي يكتب تاني
+    setStatus('Failed ❌: ' + (err.message || 'Unexpected error.') + ' — your data is saved and will retry automatically.', 'error');
+    uploadProgressLabel.textContent = 'Will retry automatically…';
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit Report';
-    setTimeout(hideProgress, 2000);
   }
 });
 </script>
