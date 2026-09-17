@@ -373,9 +373,11 @@ const MANUAL_URL = "https://script.google.com/macros/s/AKfycbwIPUhnF1bcHn7OZ4Fc4
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
 const STORAGE_KEY = "skipTaskTracker_pendingSubmissions_v1";
-const MAX_IMAGE_DIMENSION = 1600;   // أقصى عرض/ارتفاع بعد الضغط
-const IMAGE_QUALITY = 0.72;         // جودة الـ JPEG بعد الضغط
-const MAX_UPLOAD_RETRIES = 6;
+const MAX_IMAGE_DIMENSION = 1280;   // أبعاد ابتدائية - بتقل تلقائي لو الصورة لسه كبيرة
+const IMAGE_QUALITY = 0.7;          // جودة ابتدائية - بتقل تلقائي لو الصورة لسه كبيرة
+const MAX_UPLOAD_TARGET_BYTES = 550 * 1024; // الهدف: ننزل تحت ~550KB (base64) عشان تعدي حتى على أضعف نت
+const MAX_UPLOAD_RETRIES = 10;      // الأولوية دلوقتي "توصل مهما كان" مش السرعة
+const UPLOAD_TIMEOUT_MS = 120000;   // مهلة أطول (دقيقتين) بدل ما نفشل بسرعة على نت ضعيف
 
 const form = document.getElementById('taskForm');
 const issueSelect = document.getElementById('issue');
@@ -639,18 +641,39 @@ function handleImageFile(file) {
 }
 
 function compressImage(img, callback) {
-  let w = img.width, h = img.height;
-  if (w > MAX_IMAGE_DIMENSION || h > MAX_IMAGE_DIMENSION) {
-    if (w >= h) { h = Math.round(h * (MAX_IMAGE_DIMENSION / w)); w = MAX_IMAGE_DIMENSION; }
-    else { w = Math.round(w * (MAX_IMAGE_DIMENSION / h)); h = MAX_IMAGE_DIMENSION; }
+  // ✅ ضغط تكراري (adaptive): بيقلل الجودة ثم الأبعاد تدريجياً لحد ما الحجم
+  // ينزل تحت MAX_UPLOAD_TARGET_BYTES - عشان يعدي حتى على أضعف اتصال إنترنت
+  let dimension = MAX_IMAGE_DIMENSION;
+  let quality = IMAGE_QUALITY;
+  const minDimension = 640;
+  const minQuality = 0.35;
+
+  function attempt() {
+    let w = img.width, h = img.height;
+    if (w > dimension || h > dimension) {
+      if (w >= h) { h = Math.round(h * (dimension / w)); w = dimension; }
+      else { w = Math.round(w * (dimension / h)); h = dimension; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    const base64 = dataUrl.split(',')[1];
+
+    const stillTooLarge = base64.length > MAX_UPLOAD_TARGET_BYTES;
+    const canShrinkMore = quality > minQuality || dimension > minDimension;
+    if (stillTooLarge && canShrinkMore) {
+      if (quality > minQuality) quality = Math.max(minQuality, quality - 0.15);
+      else dimension = Math.max(minDimension, Math.round(dimension * 0.8));
+      attempt();
+      return;
+    }
+
+    callback(dataUrl, base64);
   }
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, w, h);
-  const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
-  const base64 = dataUrl.split(',')[1];
-  callback(dataUrl, base64);
+
+  attempt();
 }
 
 /* =====================================================
@@ -742,7 +765,7 @@ function uploadImageWithProgress(base64, mimeType, submissionId, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', API_URL, true);
     xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-    xhr.timeout = 60000;
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
 
     xhr.upload.onprogress = function (e) {
       if (e.lengthComputable && onProgress) {
@@ -774,6 +797,19 @@ function uploadImageWithProgress(base64, mimeType, submissionId, onProgress) {
   });
 }
 
+/* ---------- Fallback transport: plain fetch (no live progress) ----------
+   لو الـ XHR فشل بـ "Network error" أكتر من مرة، ده بديل يستخدم fetch()
+   بدل XMLHttpRequest. أحياناً مشاكل شبكة/إضافات متصفح/بروكسي بتتعامل مع
+   الاتنين بشكل مختلف، فاللي بيفشل مع واحد ممكن ينجح مع التاني. ===== */
+function uploadImageViaFetchFallback(base64, mimeType, submissionId) {
+  return postJSON({
+    action: 'uploadImage',
+    submissionId: submissionId,
+    imageData: base64,
+    mimeType: mimeType
+  });
+}
+
 /* ---------- Retry with exponential backoff ---------- */
 async function retryWithBackoff(fn, maxAttempts) {
   let lastErr;
@@ -799,11 +835,34 @@ async function retryWithBackoff(fn, maxAttempts) {
 async function processSubmission(entry, progressCallback) {
   // Step 1: upload image if we don't already have a URL for it
   if (!entry.screenshotUrl) {
-    const result = await retryWithBackoff(() => {
-      return uploadImageWithProgress(entry.imageBase64, entry.imageMimeType, entry.submissionId, progressCallback);
-    }, MAX_UPLOAD_RETRIES);
-    entry.screenshotUrl = result.url;
-    upsertPending(entry); // احفظ اللينك فوراً - أي retry تاني مش هيرفع الصورة تاني
+    let lastErr = null;
+    for (let attempt = 1; attempt <= MAX_UPLOAD_RETRIES; attempt++) {
+      try {
+        let result;
+        // ✅ نبدّل بين XHR (بيديك progress حقيقي) وfetch (transport بديل)
+        // كل محاولة زوجية - عشان لو فيه مشكلة خاصة بواحد منهم مع شبكة/متصفح
+        // المستخدم، البديل يكون له فرصة ينجح بدل ما نفضل نكرر نفس الطريقة
+        // اللي بتفشل
+        if (attempt % 2 === 1) {
+          result = await uploadImageWithProgress(entry.imageBase64, entry.imageMimeType, entry.submissionId, progressCallback);
+        } else {
+          if (progressCallback) progressCallback(null); // مفيش progress دقيق في المحاولة دي
+          result = await uploadImageViaFetchFallback(entry.imageBase64, entry.imageMimeType, entry.submissionId);
+        }
+        entry.screenshotUrl = result.url;
+        upsertPending(entry); // احفظ اللينك فوراً - أي retry تاني مش هيرفع الصورة تاني
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.error('Screenshot upload attempt ' + attempt + ' failed:', err);
+        if (attempt < MAX_UPLOAD_RETRIES) {
+          const delay = Math.min(2000 * Math.pow(1.6, attempt - 1), 30000);
+          await sleep(delay);
+        }
+      }
+    }
+    if (lastErr) throw lastErr;
   }
 
   // Step 2: submit the form row (small payload, fast, protected by dedupe on the server)
@@ -969,9 +1028,13 @@ form.addEventListener('submit', async function (e) {
 
   try {
     await processSubmission(entry, function (pct) {
-      uploadProgressInner.style.width = pct + '%';
-      uploadProgressLabel.textContent = 'Uploading screenshot... ' + pct + '%';
-      if (pct >= 100) uploadProgressLabel.textContent = 'Saving report...';
+      if (pct === null) {
+        uploadProgressLabel.textContent = 'Retrying upload (this attempt has no live progress)...';
+      } else {
+        uploadProgressInner.style.width = pct + '%';
+        uploadProgressLabel.textContent = 'Uploading screenshot... ' + pct + '%';
+        if (pct >= 100) uploadProgressLabel.textContent = 'Saving report...';
+      }
     });
 
     // ✅ نجح فعلاً - دلوقتي بس نمسح الفورم والداتا المحفوظة محلياً
