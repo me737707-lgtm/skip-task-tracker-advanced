@@ -369,13 +369,15 @@ label span { color: #ff6b6b; }
    ✅ رابط الـ API — وضع مزدوج (Dual Mode)
 ===================================================== */
 const INJECTED_URL = "<?= apiUrl ?>";
-const MANUAL_URL = "https://script.google.com/macros/s/AKfycbwIPUhnF1bcHn7OZ4Fc4G9vdAFYg8f5LjcmOuvRFtw3OncqUE46wH6Iy6dN3lkEp-H4/exec";
+const MANUAL_URL = "https://script.google.com/macros/s/AKfycbwN5HuL-lsQF5NKTEdMbrcXRfC7q5TB7fnXOp_EfuduhmaD7-feZV7ZlQy-M6p2jj0I/exec";
 const API_URL = (INJECTED_URL && INJECTED_URL.indexOf("<?=") === -1) ? INJECTED_URL : MANUAL_URL;
 
 const STORAGE_KEY = "skipTaskTracker_pendingSubmissions_v1";
-const MAX_IMAGE_DIMENSION = 1280;   // أبعاد ابتدائية - بتقل تلقائي لو الصورة لسه كبيرة
-const IMAGE_QUALITY = 0.7;          // جودة ابتدائية - بتقل تلقائي لو الصورة لسه كبيرة
-const MAX_UPLOAD_TARGET_BYTES = 550 * 1024; // الهدف: ننزل تحت ~550KB (base64) عشان تعدي حتى على أضعف نت
+const MAX_IMAGE_DIMENSION = 1280;   // أبعاد افتراضية لو معرفناش نوع الاتصال
+const IMAGE_QUALITY = 0.7;          // جودة افتراضية لو معرفناش نوع الاتصال
+const MAX_UPLOAD_TARGET_BYTES = 550 * 1024; // سقف افتراضي (base64) لو معرفناش نوع الاتصال
+const MIN_QUALITY_FLOOR = 0.3;      // أقل جودة ممكن نوصلها مهما كان النت ضعيف
+const MIN_DIMENSION_FLOOR = 480;    // أقل أبعاد ممكن نوصلها مهما كان النت ضعيف
 const MAX_UPLOAD_RETRIES = 10;      // الأولوية دلوقتي "توصل مهما كان" مش السرعة
 const UPLOAD_TIMEOUT_MS = 120000;   // مهلة أطول (دقيقتين) بدل ما نفشل بسرعة على نت ضعيف
 
@@ -419,6 +421,10 @@ const pendingRetryBtn = document.getElementById('pendingRetryBtn');
 
 /* current selected screenshot as a compressed base64 string (data URL) */
 let currentScreenshot = null; // { base64, mimeType, dataUrl }
+let currentSourceImage = null; // الـ <img> الأصلي (قبل الضغط) - محفوظ في الذاكرة بس عشان لو
+                                // النت ضعيف ومحتجنا نضغط أكتر أثناء الـ retries
+const sourceImagesById = {};       // submissionId -> Image (للجلسة الحالية بس)
+const compressionStateById = {};   // submissionId -> { dimension, quality } آخر إعداد ضغط استُخدم
 
 /* ---------- UUID (with fallback for old browsers) ---------- */
 function makeUUID() {
@@ -612,9 +618,39 @@ document.addEventListener('paste', (e) => {
 });
 removeShotBtn.addEventListener('click', () => {
   currentScreenshot = null;
+  currentSourceImage = null;
   screenshotPreviewWrap.classList.remove('visible');
   screenshotInput.value = '';
 });
+
+/* =====================================================
+   ✅ جودة الصورة بتتحدد حسب سرعة النت وقت اختيار السكرين شوت:
+   نت كويس (4g/downlink عالي) → جودة عالية وأبعاد أكبر
+   نت متوسط → إعدادات وسط
+   نت ضعيف (2g/slow-2g/downlink واطي) → جودة قليلة وأبعاد أصغر
+   ملاحظة: مش كل المتصفحات بتدعم navigator.connection (سفاري وفايرفوكس
+   لأ مثلاً) - في الحالة دي بنستخدم إعدادات "متوسطة" آمنة بشكل افتراضي،
+   وبرضو بيفضل شغال الضغط التكراري تحت (لو الصورة كبيرة رغم كده).
+===================================================== */
+function getNetworkProfile() {
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+  if (!conn || !conn.effectiveType) {
+    return { dimension: 1280, quality: 0.7, targetBytes: 550 * 1024, label: 'Standard (connection type unknown)' };
+  }
+
+  const type = conn.effectiveType; // 'slow-2g' | '2g' | '3g' | '4g'
+  const downlink = typeof conn.downlink === 'number' ? conn.downlink : null; // Mbps تقريبية
+
+  if (type === '4g' && (downlink === null || downlink >= 4)) {
+    return { dimension: 1920, quality: 0.88, targetBytes: 1200 * 1024, label: 'High (fast connection)' };
+  }
+  if (type === '4g' || type === '3g') {
+    return { dimension: 1280, quality: 0.65, targetBytes: 500 * 1024, label: 'Standard' };
+  }
+  // '2g' أو 'slow-2g'
+  return { dimension: 800, quality: 0.4, targetBytes: 180 * 1024, label: 'Low (weak connection)' };
+}
 
 function handleImageFile(file) {
   if (!file.type.startsWith('image/')) {
@@ -626,8 +662,10 @@ function handleImageFile(file) {
   reader.onload = function (evt) {
     const img = new Image();
     img.onload = function () {
-      compressImage(img, function (dataUrl, base64) {
-        currentScreenshot = { base64: base64, mimeType: 'image/jpeg', dataUrl: dataUrl };
+      const profile = getNetworkProfile();
+      compressImage(img, profile, function (dataUrl, base64, usedDimension, usedQuality) {
+        currentScreenshot = { base64: base64, mimeType: 'image/jpeg', dataUrl: dataUrl, dimension: usedDimension, quality: usedQuality };
+        currentSourceImage = img; // محفوظة في الذاكرة عشان لو احتجنا نعيد الضغط بجودة أقل وقت الـ retry
         screenshotPreview.src = dataUrl;
         screenshotPreviewWrap.classList.add('visible');
         setStatus('', '');
@@ -640,13 +678,13 @@ function handleImageFile(file) {
   reader.readAsDataURL(file);
 }
 
-function compressImage(img, callback) {
-  // ✅ ضغط تكراري (adaptive): بيقلل الجودة ثم الأبعاد تدريجياً لحد ما الحجم
-  // ينزل تحت MAX_UPLOAD_TARGET_BYTES - عشان يعدي حتى على أضعف اتصال إنترنت
-  let dimension = MAX_IMAGE_DIMENSION;
-  let quality = IMAGE_QUALITY;
-  const minDimension = 640;
-  const minQuality = 0.35;
+function compressImage(img, profile, callback) {
+  // ✅ ضغط تكراري (adaptive): بيبدأ من إعدادات الـ profile (المبنية على
+  // سرعة النت) وبيقلل الجودة ثم الأبعاد تدريجياً لو الصورة لسه أكبر من
+  // الهدف - عشان تعدي حتى لو النت أضعف مما توقعنا
+  let dimension = profile.dimension;
+  let quality = profile.quality;
+  const targetBytes = profile.targetBytes;
 
   function attempt() {
     let w = img.width, h = img.height;
@@ -661,16 +699,16 @@ function compressImage(img, callback) {
     const dataUrl = canvas.toDataURL('image/jpeg', quality);
     const base64 = dataUrl.split(',')[1];
 
-    const stillTooLarge = base64.length > MAX_UPLOAD_TARGET_BYTES;
-    const canShrinkMore = quality > minQuality || dimension > minDimension;
+    const stillTooLarge = base64.length > targetBytes;
+    const canShrinkMore = quality > MIN_QUALITY_FLOOR || dimension > MIN_DIMENSION_FLOOR;
     if (stillTooLarge && canShrinkMore) {
-      if (quality > minQuality) quality = Math.max(minQuality, quality - 0.15);
-      else dimension = Math.max(minDimension, Math.round(dimension * 0.8));
+      if (quality > MIN_QUALITY_FLOOR) quality = Math.max(MIN_QUALITY_FLOOR, quality - 0.15);
+      else dimension = Math.max(MIN_DIMENSION_FLOOR, Math.round(dimension * 0.8));
       attempt();
       return;
     }
 
-    callback(dataUrl, base64);
+    callback(dataUrl, base64, dimension, quality);
   }
 
   attempt();
@@ -700,6 +738,8 @@ function upsertPending(entry) {
 function removePending(submissionId) {
   const list = loadPending().filter(x => x.submissionId !== submissionId);
   savePending(list);
+  delete sourceImagesById[submissionId];
+  delete compressionStateById[submissionId];
   updatePendingBanner();
 }
 function updatePendingBanner() {
@@ -810,6 +850,41 @@ function uploadImageViaFetchFallback(base64, mimeType, submissionId) {
   });
 }
 
+/* ✅ لو الرفع فشل مرتين وعندنا الصورة الأصلية لسه في الذاكرة، نضغطها
+   أكتر (جودة وأبعاد أقل من آخر مرة) قبل المحاولة الجاية - ده تكيّف
+   حقيقي مع ضعف النت أثناء نفس الـ submission، مش بس وقت الاختيار */
+function degradeAndRecompress(submissionId) {
+  const img = sourceImagesById[submissionId];
+  if (!img) return null;
+
+  const state = compressionStateById[submissionId] || { dimension: MAX_IMAGE_DIMENSION, quality: IMAGE_QUALITY };
+  let nextQuality = state.quality;
+  let nextDimension = state.dimension;
+
+  if (nextQuality > MIN_QUALITY_FLOOR) {
+    nextQuality = Math.max(MIN_QUALITY_FLOOR, nextQuality - 0.15);
+  } else if (nextDimension > MIN_DIMENSION_FLOOR) {
+    nextDimension = Math.max(MIN_DIMENSION_FLOOR, Math.round(nextDimension * 0.75));
+  } else {
+    return null; // وصلنا لأقل حد ممكن - مفيش تحسين تاني ممكن
+  }
+
+  let w = img.width, h = img.height;
+  if (w > nextDimension || h > nextDimension) {
+    if (w >= h) { h = Math.round(h * (nextDimension / w)); w = nextDimension; }
+    else { w = Math.round(w * (nextDimension / h)); h = nextDimension; }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', nextQuality);
+  const base64 = dataUrl.split(',')[1];
+
+  compressionStateById[submissionId] = { dimension: nextDimension, quality: nextQuality };
+  return { base64: base64 };
+}
+
 /* ---------- Retry with exponential backoff ---------- */
 async function retryWithBackoff(fn, maxAttempts) {
   let lastErr;
@@ -836,6 +911,9 @@ async function processSubmission(entry, progressCallback) {
   // Step 1: upload image if we don't already have a URL for it
   if (!entry.screenshotUrl) {
     let lastErr = null;
+    let currentBase64 = entry.imageBase64;
+    const currentMime = entry.imageMimeType;
+
     for (let attempt = 1; attempt <= MAX_UPLOAD_RETRIES; attempt++) {
       try {
         let result;
@@ -844,18 +922,27 @@ async function processSubmission(entry, progressCallback) {
         // المستخدم، البديل يكون له فرصة ينجح بدل ما نفضل نكرر نفس الطريقة
         // اللي بتفشل
         if (attempt % 2 === 1) {
-          result = await uploadImageWithProgress(entry.imageBase64, entry.imageMimeType, entry.submissionId, progressCallback);
+          result = await uploadImageWithProgress(currentBase64, currentMime, entry.submissionId, progressCallback);
         } else {
           if (progressCallback) progressCallback(null); // مفيش progress دقيق في المحاولة دي
-          result = await uploadImageViaFetchFallback(entry.imageBase64, entry.imageMimeType, entry.submissionId);
+          result = await uploadImageViaFetchFallback(currentBase64, currentMime, entry.submissionId);
         }
         entry.screenshotUrl = result.url;
+        entry.imageBase64 = currentBase64; // نحدّث النسخة النهائية اللي فعلاً اترفعت (لو اتضغطت أكتر)
         upsertPending(entry); // احفظ اللينك فوراً - أي retry تاني مش هيرفع الصورة تاني
         lastErr = null;
         break;
       } catch (err) {
         lastErr = err;
         console.error('Screenshot upload attempt ' + attempt + ' failed:', err);
+
+        // ✅ لو فشلت مرتين وعندنا الصورة الأصلية، نضغطها أكتر قبل المحاولة
+        // الجاية - تكيّف تلقائي مع ضعف النت في نفس اللحظة، من غير تدخل المستخدم
+        if (attempt < MAX_UPLOAD_RETRIES && attempt % 2 === 0) {
+          const degraded = degradeAndRecompress(entry.submissionId);
+          if (degraded) currentBase64 = degraded.base64;
+        }
+
         if (attempt < MAX_UPLOAD_RETRIES) {
           const delay = Math.min(2000 * Math.pow(1.6, attempt - 1), 30000);
           await sleep(delay);
@@ -1015,6 +1102,14 @@ form.addEventListener('submit', async function (e) {
     }
   };
 
+  // ✅ نخزن الصورة الأصلية في الذاكرة (مش في localStorage) عشان لو حصل فشل
+  // متكرر أثناء الرفع نقدر نضغطها أكتر تلقائياً بدون ما نضايق المستخدم
+  if (currentSourceImage) {
+    sourceImagesById[submissionId] = currentSourceImage;
+    compressionStateById[submissionId] = { dimension: currentScreenshot.dimension, quality: currentScreenshot.quality };
+  }
+
+
   // ✅ نحفظ الداتا محلياً قبل أي محاولة شبكة - لو حصل أي حاجة (قفل تاب، نت وقع،
   // إلخ) الداتا مش هتضيع وهتترسل تلقائي أول ما يرجع النت أو الصفحة تتفتح تاني
   upsertPending(entry);
@@ -1044,6 +1139,7 @@ form.addEventListener('submit', async function (e) {
     setTimestamp();
     hideAllDynamicGroups();
     currentScreenshot = null;
+    currentSourceImage = null;
     screenshotPreviewWrap.classList.remove('visible');
     screenshotInput.value = '';
     uploadProgressOuter.classList.remove('visible');
